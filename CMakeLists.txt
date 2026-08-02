@@ -10,6 +10,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Export compilation database for clangd
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Compiler warnings
 if(MSVC)
     add_compile_options(/W4 /permissive-)
@@ -34,19 +37,34 @@ target_include_directories(matchit INTERFACE
 )
 
 # ------------------------------------------------------------------------------
-# Main executable
+# Compiler library
+# ------------------------------------------------------------------------------
+
+add_library(compiler STATIC
+    src/compiler/lexer.cpp
+    src/compiler/parser.cpp
+    src/compiler/codegen.cpp
+)
+
+target_include_directories(compiler PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(compiler PUBLIC
+    matchit
+)
+
+# ------------------------------------------------------------------------------
+# Driver executable
 # ------------------------------------------------------------------------------
 
 add_executable(ccompiler)
 
 target_sources(ccompiler PRIVATE
     src/main.cpp
-)
-
-target_include_directories(ccompiler PRIVATE
-    include
+    src/driver.cpp
 )
 
 target_link_libraries(ccompiler PRIVATE
-    matchit
+    compiler
 )
