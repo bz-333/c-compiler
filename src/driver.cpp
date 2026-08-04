@@ -14,6 +14,7 @@
 #include "compiler/compiler.hpp"
 #include "compiler/lexer.hpp"
 #include "compiler/parser.hpp"
+#include "compiler/pprint.hpp"
 
 namespace {
 
@@ -90,6 +91,8 @@ int Driver::parse_args(int argc, char** argv, Options& opts) {
       opts.stage = Stage::Parse;
     } else if (arg == "--codegen") {
       opts.stage = Stage::Codegen;
+    } else if (arg == "--pprint") {
+      opts.stage = Stage::PrettyPrint;
     } else if (arg == "-S") {
       opts.stop_at_assembly = true;
     } else if (arg == "-c") {
@@ -155,6 +158,11 @@ int Driver::compile_one(const Options& opts, const std::string& input,
 
     compiler::Program program = compiler::parse(tokens);
     if (opts.stage == Stage::Parse) {
+      return 0;
+    }
+
+    if (opts.stage == Stage::PrettyPrint) {
+      compiler::pretty_print(program, std::cout);
       return 0;
     }
 
@@ -246,6 +254,7 @@ void Driver::print_usage(const char* program) {
             << "  --lex       Run the lexer only; produce no output\n"
             << "  --parse     Run the lexer and parser; produce no output\n"
             << "  --codegen   Run all stages up to code generation; produce no output\n"
+            << "  --pprint    Parse and print the AST\n"
             << "  -S          Compile to assembly and stop\n"
             << "  -c          Compile and assemble but do not link\n"
             << "  -o <file>   Write output to <file>\n"

@@ -44,6 +44,7 @@ add_library(compiler STATIC
     src/compiler/lexer.cpp
     src/compiler/parser.cpp
     src/compiler/codegen.cpp
+    src/compiler/pprint.cpp
 )
 
 target_include_directories(compiler PUBLIC

@@ -10,6 +10,7 @@ class Driver {
     Lex,
     Parse,
     Codegen,
+    PrettyPrint,
   };
 
   struct Options {
