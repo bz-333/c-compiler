@@ -4,17 +4,11 @@
 #include <string>
 #include <variant>
 
+#include "compiler/compiler.hpp"
+
 namespace compiler {
 
 namespace {
-
-template <typename... Ts>
-struct Overloaded : Ts... {
-  using Ts::operator()...;
-};
-
-template <typename... Ts>
-Overloaded(Ts...) -> Overloaded<Ts...>;
 
 void indent(std::ostream& os, int depth) {
   for (int i = 0; i < depth; ++i) {
@@ -22,7 +16,7 @@ void indent(std::ostream& os, int depth) {
   }
 }
 
-void print_exp(const Exp& exp, std::ostream& os, int depth) {
+void print_exp(const Exp& exp, std::ostream& os) {
   std::visit(
       Overloaded{[&](const Constant& c) { os << "Constant(" << c.value << ")"; }},
       exp);
@@ -33,7 +27,7 @@ void print_stmt(const Stmt& stmt, std::ostream& os, int depth) {
       Overloaded{[&](const Return& r) {
         os << "Return(\n";
         indent(os, depth + 1);
-        print_exp(r.exp, os, depth + 1);
+        print_exp(r.exp, os);
         os << '\n';
         indent(os, depth);
         os << ')';

@@ -32,7 +32,7 @@ endif()
 
 add_library(matchit INTERFACE)
 
-target_include_directories(matchit INTERFACE
+target_include_directories(matchit SYSTEM INTERFACE
 	${CMAKE_CURRENT_SOURCE_DIR}/external/BowenFu
 )
 
