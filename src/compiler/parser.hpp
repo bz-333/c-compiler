@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <variant>
 #include <vector>
@@ -12,7 +13,20 @@ struct Constant {
   int value;
 };
 
-using Exp = std::variant<Constant>;
+struct Negate {};
+
+struct Complement {};
+
+using UnaryOp = std::variant<Negate, Complement>;
+
+struct Unary;
+
+using Exp = std::variant<Constant, std::unique_ptr<Unary>>;
+
+struct Unary {
+  UnaryOp op;
+  Exp operand;
+};
 
 struct Return {
   Exp exp;

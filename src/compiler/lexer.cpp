@@ -90,6 +90,17 @@ std::vector<Token> lex(const std::string& source) {
       case ';':
         tokens.push_back({Token::Kind::Semicolon});
         break;
+      case '-':
+        if (i + 1 < source.size() && source[i + 1] == '-') {
+          tokens.push_back({Token::Kind::DoubleMinus});
+          ++i;
+        } else {
+          tokens.push_back({Token::Kind::Minus});
+        }
+        break;
+      case '~':
+        tokens.push_back({Token::Kind::Tilde});
+        break;
       default:
         throw CompileError(std::string("unexpected character: '") + c + "'");
     }

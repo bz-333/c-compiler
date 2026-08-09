@@ -16,9 +16,25 @@ void indent(std::ostream& os, int depth) {
   }
 }
 
+void print_unary_op(const UnaryOp& op, std::ostream& os) {
+  std::visit(Overloaded{
+                 [&](const Negate&) { os << "Negate"; },
+                 [&](const Complement&) { os << "Complement"; },
+             },
+             op);
+}
+
 void print_exp(const Exp& exp, std::ostream& os) {
   std::visit(
-      Overloaded{[&](const Constant& c) { os << "Constant(" << c.value << ")"; }},
+      Overloaded{
+          [&](const Constant& c) { os << "Constant(" << c.value << ")"; },
+          [&](const std::unique_ptr<Unary>& u) {
+            os << "Unary(";
+            print_unary_op(u->op, os);
+            os << ", ";
+            print_exp(u->operand, os);
+            os << ')';
+          }},
       exp);
 }
 

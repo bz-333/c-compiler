@@ -18,6 +18,9 @@ struct Token {
     OpenBrace,
     CloseBrace,
     Semicolon,
+    Minus,
+    DoubleMinus,
+    Tilde,
   };
 
   Kind kind = Kind::Eof;
