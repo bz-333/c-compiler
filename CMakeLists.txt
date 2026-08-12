@@ -43,8 +43,12 @@ target_include_directories(matchit SYSTEM INTERFACE
 add_library(compiler STATIC
     src/compiler/lexer.cpp
     src/compiler/parser.cpp
+    src/compiler/ast_pprint.cpp
+    src/compiler/tacky_pprint.cpp
+    src/compiler/irgen.cpp
     src/compiler/codegen.cpp
-    src/compiler/pprint.cpp
+    src/compiler/asmgen.cpp
+    src/compiler/emit.cpp
 )
 
 target_include_directories(compiler PUBLIC

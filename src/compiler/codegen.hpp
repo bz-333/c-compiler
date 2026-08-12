@@ -4,34 +4,57 @@
 #include <variant>
 #include <vector>
 
-#include "compiler/parser.hpp"
+#include "compiler/tacky.hpp"
 
 namespace compiler {
 
 enum class Reg {
-  Eax,
+  Ax,
+  R10,
 };
 
 struct Imm {
   int value;
 };
 
-using Operand = std::variant<Imm, Reg>;
+struct Pseudo {
+  std::string name;
+};
+
+struct Stack {
+  int offset;
+};
+
+using Operand = std::variant<Imm, Pseudo, Reg, Stack>;
 
 struct Mov {
   Operand src;
   Operand dst;
 };
 
+enum class AsmUnaryOp {
+  Negate,
+  Complement,
+};
+
+struct AsmUnary {
+  AsmUnaryOp op;
+  Operand operand;
+};
+
 struct Ret {};
 
-using Instruction = std::variant<Mov, Ret>;
+struct AllocateStack {
+  int num_bytes;
+};
+
+using Instruction = std::variant<Mov, AsmUnary, Ret, AllocateStack>;
 
 struct AssemblyFunction {
   std::string name;
   std::vector<Instruction> instructions;
 };
 
-std::string codegen(const Program& program);
+std::string codegen(const TackyProgram& program);
 
 }  // namespace compiler

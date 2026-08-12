@@ -11,6 +11,8 @@ class Driver {
     Parse,
     Codegen,
     PrettyPrint,
+    Tacky,
+    TackyPrettyPrint,
   };
 
   struct Options {

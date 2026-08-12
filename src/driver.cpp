@@ -12,9 +12,12 @@
 
 #include "compiler/codegen.hpp"
 #include "compiler/compiler.hpp"
+#include "compiler/irgen.hpp"
 #include "compiler/lexer.hpp"
 #include "compiler/parser.hpp"
-#include "compiler/pprint.hpp"
+#include "compiler/ast_pprint.hpp"
+#include "compiler/tacky.hpp"
+#include "compiler/tacky_pprint.hpp"
 
 namespace {
 
@@ -93,6 +96,10 @@ int Driver::parse_args(int argc, char** argv, Options& opts) {
       opts.stage = Stage::Codegen;
     } else if (arg == "--pprint") {
       opts.stage = Stage::PrettyPrint;
+    } else if (arg == "--tacky") {
+      opts.stage = Stage::Tacky;
+    } else if (arg == "--tacky-pprint") {
+      opts.stage = Stage::TackyPrettyPrint;
     } else if (arg == "-S") {
       opts.stop_at_assembly = true;
     } else if (arg == "-c") {
@@ -134,7 +141,9 @@ int Driver::compile(const Options& opts) {
   }
   if (opts.stage == Stage::Compile && !opts.stop_at_assembly &&
       !opts.stop_at_object) {
-    std::string output = opts.output.empty() ? "a.out" : opts.output;
+    std::string output = opts.output.empty()
+                             ? replace_extension(opts.inputs.front(), "")
+                             : opts.output;
     return link(objects, output);
   }
   return 0;
@@ -166,7 +175,17 @@ int Driver::compile_one(const Options& opts, const std::string& input,
       return 0;
     }
 
-    std::string assembly = compiler::codegen(program);
+    compiler::TackyProgram tacky = compiler::irgen(program);
+    if (opts.stage == Stage::Tacky) {
+      return 0;
+    }
+
+    if (opts.stage == Stage::TackyPrettyPrint) {
+      compiler::pretty_print(tacky, std::cout);
+      return 0;
+    }
+
+    std::string assembly = compiler::codegen(tacky);
     if (opts.stage == Stage::Codegen) {
       return 0;
     }
@@ -255,6 +274,8 @@ void Driver::print_usage(const char* program) {
             << "  --parse     Run the lexer and parser; produce no output\n"
             << "  --codegen   Run all stages up to code generation; produce no output\n"
             << "  --pprint    Parse and print the AST\n"
+            << "  --tacky     Generate TACKY IR; produce no output\n"
+            << "  --tacky-pprint  Generate and print TACKY IR\n"
             << "  -S          Compile to assembly and stop\n"
             << "  -c          Compile and assemble but do not link\n"
             << "  -o <file>   Write output to <file>\n"
