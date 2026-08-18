@@ -43,6 +43,10 @@ AssemblyFunction convert_tacky(const TackyProgram& program) {
               Operand dst = convert_val(u.dst);
               instructions.push_back(Mov{convert_val(u.src), dst});
               instructions.push_back(AsmUnary{convert_op(u.op), dst});
+            },
+            [&](const TackyBinary&) {
+              throw CompileError(
+                  "binary instructions not yet supported by codegen");
             }},
         instr);
   }

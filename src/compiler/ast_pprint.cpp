@@ -24,6 +24,17 @@ void print_unary_op(const UnaryOp& op, std::ostream& os) {
              op);
 }
 
+void print_binary_op(const BinaryOp& op, std::ostream& os) {
+  std::visit(Overloaded{
+                 [&](const Add&) { os << "Add"; },
+                 [&](const Subtract&) { os << "Subtract"; },
+                 [&](const Multiply&) { os << "Multiply"; },
+                 [&](const Divide&) { os << "Divide"; },
+                 [&](const Remainder&) { os << "Remainder"; },
+             },
+             op);
+}
+
 void print_exp(const Exp& exp, std::ostream& os) {
   std::visit(
       Overloaded{
@@ -33,6 +44,15 @@ void print_exp(const Exp& exp, std::ostream& os) {
             print_unary_op(u->op, os);
             os << ", ";
             print_exp(u->operand, os);
+            os << ')';
+          },
+          [&](const std::unique_ptr<Binary>& b) {
+            os << "Binary(";
+            print_binary_op(b->op, os);
+            os << ", ";
+            print_exp(b->lhs, os);
+            os << ", ";
+            print_exp(b->rhs, os);
             os << ')';
           }},
       exp);

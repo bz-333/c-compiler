@@ -19,13 +19,33 @@ struct Complement {};
 
 using UnaryOp = std::variant<Negate, Complement>;
 
+struct Add {};
+
+struct Subtract {};
+
+struct Multiply {};
+
+struct Divide {};
+
+struct Remainder {};
+
+using BinaryOp = std::variant<Add, Subtract, Multiply, Divide, Remainder>;
+
 struct Unary;
 
-using Exp = std::variant<Constant, std::unique_ptr<Unary>>;
+struct Binary;
+
+using Exp = std::variant<Constant, std::unique_ptr<Unary>, std::unique_ptr<Binary>>;
 
 struct Unary {
   UnaryOp op;
   Exp operand;
+};
+
+struct Binary {
+  BinaryOp op;
+  Exp lhs;
+  Exp rhs;
 };
 
 struct Return {

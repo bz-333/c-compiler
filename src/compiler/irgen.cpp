@@ -36,6 +36,18 @@ class IrGenerator {
         op);
   }
 
+  static TackyBinaryOp gen_binop(const BinaryOp& op) {
+    return std::visit(
+        Overloaded{
+            [](const Add&) -> TackyBinaryOp { return TackyAdd{}; },
+            [](const Subtract&) -> TackyBinaryOp { return TackySubtract{}; },
+            [](const Multiply&) -> TackyBinaryOp { return TackyMultiply{}; },
+            [](const Divide&) -> TackyBinaryOp { return TackyDivide{}; },
+            [](const Remainder&) -> TackyBinaryOp { return TackyRemainder{}; },
+        },
+        op);
+  }
+
   TackyVal gen_exp(const Exp& exp) {
     return std::visit(
         Overloaded{
@@ -46,6 +58,14 @@ class IrGenerator {
               TackyVal src = gen_exp(u->operand);
               TackyVar dst{make_temporary()};
               instructions_.push_back(TackyUnary{gen_op(u->op), src, dst});
+              return dst;
+            },
+            [&](const std::unique_ptr<Binary>& b) -> TackyVal {
+              TackyVal v1 = gen_exp(b->lhs);
+              TackyVal v2 = gen_exp(b->rhs);
+              TackyVar dst{make_temporary()};
+              instructions_.push_back(
+                  TackyBinary{gen_binop(b->op), v1, v2, dst});
               return dst;
             }},
         exp);

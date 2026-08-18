@@ -32,7 +32,27 @@ struct TackyUnary {
   TackyVal dst;
 };
 
-using TackyInstruction = std::variant<TackyReturn, TackyUnary>;
+struct TackyAdd {};
+
+struct TackySubtract {};
+
+struct TackyMultiply {};
+
+struct TackyDivide {};
+
+struct TackyRemainder {};
+
+using TackyBinaryOp = std::variant<TackyAdd, TackySubtract, TackyMultiply,
+                                   TackyDivide, TackyRemainder>;
+
+struct TackyBinary {
+  TackyBinaryOp op;
+  TackyVal src1;
+  TackyVal src2;
+  TackyVal dst;
+};
+
+using TackyInstruction = std::variant<TackyReturn, TackyUnary, TackyBinary>;
 
 struct TackyFunction {
   std::string name;

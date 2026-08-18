@@ -101,6 +101,18 @@ std::vector<Token> lex(const std::string& source) {
       case '~':
         tokens.push_back({Token::Kind::Tilde});
         break;
+      case '+':
+        tokens.push_back({Token::Kind::Plus});
+        break;
+      case '*':
+        tokens.push_back({Token::Kind::Star});
+        break;
+      case '/':
+        tokens.push_back({Token::Kind::Slash});
+        break;
+      case '%':
+        tokens.push_back({Token::Kind::Percent});
+        break;
       default:
         throw CompileError(std::string("unexpected character: '") + c + "'");
     }

@@ -21,6 +21,10 @@ struct Token {
     Minus,
     DoubleMinus,
     Tilde,
+    Plus,
+    Star,
+    Slash,
+    Percent,
   };
 
   Kind kind = Kind::Eof;

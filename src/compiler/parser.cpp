@@ -40,6 +40,14 @@ const char* kind_name(Token::Kind kind) {
       return "'--'";
     case Token::Kind::Tilde:
       return "'~'";
+    case Token::Kind::Plus:
+      return "'+'";
+    case Token::Kind::Star:
+      return "'*'";
+    case Token::Kind::Slash:
+      return "'/'";
+    case Token::Kind::Percent:
+      return "'%'";
   }
   return "?";
 }
@@ -100,19 +108,33 @@ class Parser {
     return Return{std::move(exp)};
   }
 
-  Exp parse_exp() {
+  Exp parse_exp(int min_prec = 0) {
+    Exp left = parse_factor();
+    while (true) {
+      Token::Kind kind = peek().kind;
+      if (!is_binary_op(kind) || precedence(kind) < min_prec) {
+        break;
+      }
+      BinaryOp op = parse_binop();
+      Exp right = parse_exp(precedence(kind) + 1);
+      left = Exp{std::make_unique<Binary>(Binary{op, std::move(left), std::move(right)})};
+    }
+    return left;
+  }
+
+  Exp parse_factor() {
     const Token& token = peek();
     if (token.kind == Token::Kind::Constant) {
       return parse_constant();
     }
     if (token.kind == Token::Kind::Minus || token.kind == Token::Kind::Tilde) {
       UnaryOp op = parse_unary_op();
-      Exp operand = parse_exp();
+      Exp operand = parse_factor();
       return Exp{std::make_unique<Unary>(Unary{op, std::move(operand)})};
     }
     if (token.kind == Token::Kind::OpenParen) {
       advance();
-      Exp inner = parse_exp();
+      Exp inner = parse_exp(0);
       expect(Token::Kind::CloseParen);
       return inner;
     }
@@ -128,6 +150,44 @@ class Parser {
       return Complement{};
     }
     throw CompileError("expected unary operator, got " + describe(token));
+  }
+
+  BinaryOp parse_binop() {
+    const Token& token = advance();
+    switch (token.kind) {
+      case Token::Kind::Plus:
+        return Add{};
+      case Token::Kind::Minus:
+        return Subtract{};
+      case Token::Kind::Star:
+        return Multiply{};
+      case Token::Kind::Slash:
+        return Divide{};
+      case Token::Kind::Percent:
+        return Remainder{};
+      default:
+        throw CompileError("expected binary operator, got " + describe(token));
+    }
+  }
+
+  static bool is_binary_op(Token::Kind kind) {
+    return kind == Token::Kind::Plus || kind == Token::Kind::Minus ||
+           kind == Token::Kind::Star || kind == Token::Kind::Slash ||
+           kind == Token::Kind::Percent;
+  }
+
+  static int precedence(Token::Kind kind) {
+    switch (kind) {
+      case Token::Kind::Star:
+      case Token::Kind::Slash:
+      case Token::Kind::Percent:
+        return 50;
+      case Token::Kind::Plus:
+      case Token::Kind::Minus:
+        return 45;
+      default:
+        return 0;
+    }
   }
 
   Exp parse_constant() {

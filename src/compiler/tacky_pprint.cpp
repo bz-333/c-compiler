@@ -35,6 +35,18 @@ void print_op(const TackyUnaryOp& op, std::ostream& os) {
       op);
 }
 
+void print_binop(const TackyBinaryOp& op, std::ostream& os) {
+  std::visit(
+      Overloaded{
+          [&](const TackyAdd&) { os << "Add"; },
+          [&](const TackySubtract&) { os << "Subtract"; },
+          [&](const TackyMultiply&) { os << "Multiply"; },
+          [&](const TackyDivide&) { os << "Divide"; },
+          [&](const TackyRemainder&) { os << "Remainder"; },
+      },
+      op);
+}
+
 void print_instruction(const TackyInstruction& instr, std::ostream& os,
                        int depth) {
   std::visit(
@@ -59,6 +71,24 @@ void print_instruction(const TackyInstruction& instr, std::ostream& os,
             os << ",\n";
             indent(os, depth + 1);
             print_val(u.dst, os);
+            os << '\n';
+            indent(os, depth);
+            os << ')';
+          },
+          [&](const TackyBinary& b) {
+            indent(os, depth);
+            os << "TackyBinary(\n";
+            indent(os, depth + 1);
+            print_binop(b.op, os);
+            os << ",\n";
+            indent(os, depth + 1);
+            print_val(b.src1, os);
+            os << ",\n";
+            indent(os, depth + 1);
+            print_val(b.src2, os);
+            os << ",\n";
+            indent(os, depth + 1);
+            print_val(b.dst, os);
             os << '\n';
             indent(os, depth);
             os << ')';
