@@ -15,7 +15,17 @@ std::string emit_operand(const Operand& operand) {
       Overloaded{
           [](const Imm& imm) { return "$" + std::to_string(imm.value); },
           [](Reg reg) {
-            return reg == Reg::Ax ? std::string{"%eax"} : std::string{"%r10d"};
+            switch (reg) {
+              case Reg::Ax:
+                return std::string{"%eax"};
+              case Reg::Dx:
+                return std::string{"%edx"};
+              case Reg::R10:
+                return std::string{"%r10d"};
+              case Reg::R11:
+                return std::string{"%r11d"};
+            }
+            return std::string{"%eax"};
           },
           [](const Stack& stack) {
             return std::to_string(stack.offset) + "(%rbp)";
@@ -38,6 +48,26 @@ std::string emit_instruction(const Instruction& instruction) {
             std::string op = unary.op == AsmUnaryOp::Negate ? "negl" : "notl";
             return "    " + op + " " + emit_operand(unary.operand);
           },
+          [](const AsmBinary& binary) {
+            std::string op;
+            switch (binary.op) {
+              case AsmBinaryOp::Add:
+                op = "addl";
+                break;
+              case AsmBinaryOp::Sub:
+                op = "subl";
+                break;
+              case AsmBinaryOp::Mult:
+                op = "imull";
+                break;
+            }
+            return "    " + op + " " + emit_operand(binary.src) + ", " +
+                   emit_operand(binary.dst);
+          },
+          [](const Idiv& idiv) {
+            return "    idivl " + emit_operand(idiv.operand);
+          },
+          [](const Cdq&) { return std::string{"    cdq"}; },
           [](const AllocateStack& alloc) {
             return "    subq $" + std::to_string(alloc.num_bytes) + ", %rsp";
           },

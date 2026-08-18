@@ -10,7 +10,9 @@ namespace compiler {
 
 enum class Reg {
   Ax,
+  Dx,
   R10,
+  R11,
 };
 
 struct Imm {
@@ -42,13 +44,32 @@ struct AsmUnary {
   Operand operand;
 };
 
+enum class AsmBinaryOp {
+  Add,
+  Sub,
+  Mult,
+};
+
+struct AsmBinary {
+  AsmBinaryOp op;
+  Operand src;
+  Operand dst;
+};
+
+struct Idiv {
+  Operand operand;
+};
+
+struct Cdq {};
+
 struct Ret {};
 
 struct AllocateStack {
   int num_bytes;
 };
 
-using Instruction = std::variant<Mov, AsmUnary, Ret, AllocateStack>;
+using Instruction = std::variant<Mov, AsmUnary, AsmBinary, Idiv, Cdq, Ret,
+                                 AllocateStack>;
 
 struct AssemblyFunction {
   std::string name;

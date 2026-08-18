@@ -44,9 +44,41 @@ AssemblyFunction convert_tacky(const TackyProgram& program) {
               instructions.push_back(Mov{convert_val(u.src), dst});
               instructions.push_back(AsmUnary{convert_op(u.op), dst});
             },
-            [&](const TackyBinary&) {
-              throw CompileError(
-                  "binary instructions not yet supported by codegen");
+            [&](const TackyBinary& b) {
+              Operand src1 = convert_val(b.src1);
+              Operand src2 = convert_val(b.src2);
+              Operand dst = convert_val(b.dst);
+              std::visit(
+                  Overloaded{
+                      [&](const TackyAdd&) {
+                        instructions.push_back(Mov{src1, dst});
+                        instructions.push_back(
+                            AsmBinary{AsmBinaryOp::Add, src2, dst});
+                      },
+                      [&](const TackySubtract&) {
+                        instructions.push_back(Mov{src1, dst});
+                        instructions.push_back(
+                            AsmBinary{AsmBinaryOp::Sub, src2, dst});
+                      },
+                      [&](const TackyMultiply&) {
+                        instructions.push_back(Mov{src1, dst});
+                        instructions.push_back(
+                            AsmBinary{AsmBinaryOp::Mult, src2, dst});
+                      },
+                      [&](const TackyDivide&) {
+                        instructions.push_back(Mov{src1, Reg::Ax});
+                        instructions.push_back(Cdq{});
+                        instructions.push_back(Idiv{src2});
+                        instructions.push_back(Mov{Reg::Ax, dst});
+                      },
+                      [&](const TackyRemainder&) {
+                        instructions.push_back(Mov{src1, Reg::Ax});
+                        instructions.push_back(Cdq{});
+                        instructions.push_back(Idiv{src2});
+                        instructions.push_back(Mov{Reg::Dx, dst});
+                      },
+                  },
+                  b.op);
             }},
         instr);
   }
@@ -83,6 +115,14 @@ int replace_pseudos(std::vector<Instruction>& instructions) {
             [&](AsmUnary& unary) {
               unary.operand = replace_pseudo(unary.operand, mapping, offset);
             },
+            [&](AsmBinary& binary) {
+              binary.src = replace_pseudo(binary.src, mapping, offset);
+              binary.dst = replace_pseudo(binary.dst, mapping, offset);
+            },
+            [&](Idiv& idiv) {
+              idiv.operand = replace_pseudo(idiv.operand, mapping, offset);
+            },
+            [&](Cdq&) {},
             [&](Ret&) {},
             [&](AllocateStack&) {},
         },
@@ -96,11 +136,41 @@ void fixup(std::vector<Instruction>& instructions, int stack_size) {
   fixed.reserve(instructions.size() + 1);
   fixed.push_back(AllocateStack{stack_size});
   for (Instruction& instr : instructions) {
-    if (const auto* mov = std::get_if<Mov>(&instr);
-        mov != nullptr && is_memory(mov->src) && is_memory(mov->dst)) {
-      fixed.push_back(Mov{mov->src, Reg::R10});
-      fixed.push_back(Mov{Reg::R10, mov->dst});
-    } else {
+    bool rewritten = false;
+    std::visit(
+        Overloaded{
+            [&](Mov& mov) {
+              if (is_memory(mov.src) && is_memory(mov.dst)) {
+                fixed.push_back(Mov{mov.src, Reg::R10});
+                fixed.push_back(Mov{Reg::R10, mov.dst});
+                rewritten = true;
+              }
+            },
+            [&](AsmBinary& binary) {
+              if (binary.op == AsmBinaryOp::Mult && is_memory(binary.dst)) {
+                fixed.push_back(Mov{binary.dst, Reg::R11});
+                fixed.push_back(
+                    AsmBinary{binary.op, binary.src, Reg::R11});
+                fixed.push_back(Mov{Reg::R11, binary.dst});
+                rewritten = true;
+              } else if (is_memory(binary.src) && is_memory(binary.dst)) {
+                fixed.push_back(Mov{binary.src, Reg::R10});
+                fixed.push_back(
+                    AsmBinary{binary.op, Reg::R10, binary.dst});
+                rewritten = true;
+              }
+            },
+            [&](Idiv& idiv) {
+              if (std::holds_alternative<Imm>(idiv.operand)) {
+                fixed.push_back(Mov{idiv.operand, Reg::R10});
+                fixed.push_back(Idiv{Reg::R10});
+                rewritten = true;
+              }
+            },
+            [&](auto&) {},
+        },
+        instr);
+    if (!rewritten) {
       fixed.push_back(std::move(instr));
     }
   }
