@@ -29,7 +29,18 @@ struct Divide {};
 
 struct Remainder {};
 
-using BinaryOp = std::variant<Add, Subtract, Multiply, Divide, Remainder>;
+struct BitAnd {};
+
+struct BitOr {};
+
+struct BitXor {};
+
+struct LeftShift {};
+
+struct RightShift {};
+
+using BinaryOp = std::variant<Add, Subtract, Multiply, Divide, Remainder,
+                              BitAnd, BitOr, BitXor, LeftShift, RightShift>;
 
 struct Unary;
 

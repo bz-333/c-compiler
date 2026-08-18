@@ -77,6 +77,31 @@ AssemblyFunction convert_tacky(const TackyProgram& program) {
                         instructions.push_back(Idiv{src2});
                         instructions.push_back(Mov{Reg::Dx, dst});
                       },
+                      [&](const TackyBitAnd&) {
+                        instructions.push_back(Mov{src1, dst});
+                        instructions.push_back(
+                            AsmBinary{AsmBinaryOp::BitAnd, src2, dst});
+                      },
+                      [&](const TackyBitOr&) {
+                        instructions.push_back(Mov{src1, dst});
+                        instructions.push_back(
+                            AsmBinary{AsmBinaryOp::BitOr, src2, dst});
+                      },
+                      [&](const TackyBitXor&) {
+                        instructions.push_back(Mov{src1, dst});
+                        instructions.push_back(
+                            AsmBinary{AsmBinaryOp::BitXor, src2, dst});
+                      },
+                      [&](const TackyLeftShift&) {
+                        instructions.push_back(Mov{src1, dst});
+                        instructions.push_back(
+                            AsmBinary{AsmBinaryOp::LeftShift, src2, dst});
+                      },
+                      [&](const TackyRightShift&) {
+                        instructions.push_back(Mov{src1, dst});
+                        instructions.push_back(
+                            AsmBinary{AsmBinaryOp::RightShift, src2, dst});
+                      },
                   },
                   b.op);
             }},
@@ -87,6 +112,10 @@ AssemblyFunction convert_tacky(const TackyProgram& program) {
 
 bool is_memory(const Operand& operand) {
   return std::holds_alternative<Stack>(operand);
+}
+
+bool is_shift(AsmBinaryOp op) {
+  return op == AsmBinaryOp::LeftShift || op == AsmBinaryOp::RightShift;
 }
 
 Operand replace_pseudo(Operand operand, std::map<std::string, Stack>& mapping,
@@ -147,7 +176,13 @@ void fixup(std::vector<Instruction>& instructions, int stack_size) {
               }
             },
             [&](AsmBinary& binary) {
-              if (binary.op == AsmBinaryOp::Mult && is_memory(binary.dst)) {
+              if (is_shift(binary.op) &&
+                  !std::holds_alternative<Imm>(binary.src)) {
+                fixed.push_back(Mov{binary.src, Reg::Ecx});
+                fixed.push_back(AsmBinary{binary.op, Reg::Ecx, binary.dst});
+                rewritten = true;
+              } else if (binary.op == AsmBinaryOp::Mult &&
+                         is_memory(binary.dst)) {
                 fixed.push_back(Mov{binary.dst, Reg::R11});
                 fixed.push_back(
                     AsmBinary{binary.op, binary.src, Reg::R11});

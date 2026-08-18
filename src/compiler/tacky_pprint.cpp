@@ -43,6 +43,11 @@ void print_binop(const TackyBinaryOp& op, std::ostream& os) {
           [&](const TackyMultiply&) { os << "Multiply"; },
           [&](const TackyDivide&) { os << "Divide"; },
           [&](const TackyRemainder&) { os << "Remainder"; },
+          [&](const TackyBitAnd&) { os << "BitAnd"; },
+          [&](const TackyBitOr&) { os << "BitOr"; },
+          [&](const TackyBitXor&) { os << "BitXor"; },
+          [&](const TackyLeftShift&) { os << "LeftShift"; },
+          [&](const TackyRightShift&) { os << "RightShift"; },
       },
       op);
 }

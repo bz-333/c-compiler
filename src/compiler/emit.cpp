@@ -10,6 +10,10 @@ namespace compiler {
 
 namespace {
 
+bool is_shift(AsmBinaryOp op) {
+  return op == AsmBinaryOp::LeftShift || op == AsmBinaryOp::RightShift;
+}
+
 std::string emit_operand(const Operand& operand) {
   return std::visit(
       Overloaded{
@@ -20,6 +24,8 @@ std::string emit_operand(const Operand& operand) {
                 return std::string{"%eax"};
               case Reg::Dx:
                 return std::string{"%edx"};
+              case Reg::Ecx:
+                return std::string{"%ecx"};
               case Reg::R10:
                 return std::string{"%r10d"};
               case Reg::R11:
@@ -60,9 +66,29 @@ std::string emit_instruction(const Instruction& instruction) {
               case AsmBinaryOp::Mult:
                 op = "imull";
                 break;
+              case AsmBinaryOp::BitAnd:
+                op = "andl";
+                break;
+              case AsmBinaryOp::BitOr:
+                op = "orl";
+                break;
+              case AsmBinaryOp::BitXor:
+                op = "xorl";
+                break;
+              case AsmBinaryOp::LeftShift:
+                op = "sall";
+                break;
+              case AsmBinaryOp::RightShift:
+                op = "sarl";
+                break;
             }
-            return "    " + op + " " + emit_operand(binary.src) + ", " +
-                   emit_operand(binary.dst);
+            std::string src = emit_operand(binary.src);
+            if (is_shift(binary.op) &&
+                std::holds_alternative<Reg>(binary.src) &&
+                std::get<Reg>(binary.src) == Reg::Ecx) {
+              src = "%cl";
+            }
+            return "    " + op + " " + src + ", " + emit_operand(binary.dst);
           },
           [](const Idiv& idiv) {
             return "    idivl " + emit_operand(idiv.operand);

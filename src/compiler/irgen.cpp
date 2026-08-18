@@ -44,6 +44,11 @@ class IrGenerator {
             [](const Multiply&) -> TackyBinaryOp { return TackyMultiply{}; },
             [](const Divide&) -> TackyBinaryOp { return TackyDivide{}; },
             [](const Remainder&) -> TackyBinaryOp { return TackyRemainder{}; },
+            [](const BitAnd&) -> TackyBinaryOp { return TackyBitAnd{}; },
+            [](const BitOr&) -> TackyBinaryOp { return TackyBitOr{}; },
+            [](const BitXor&) -> TackyBinaryOp { return TackyBitXor{}; },
+            [](const LeftShift&) -> TackyBinaryOp { return TackyLeftShift{}; },
+            [](const RightShift&) -> TackyBinaryOp { return TackyRightShift{}; },
         },
         op);
   }

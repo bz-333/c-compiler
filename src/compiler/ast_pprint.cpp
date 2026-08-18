@@ -31,6 +31,11 @@ void print_binary_op(const BinaryOp& op, std::ostream& os) {
                  [&](const Multiply&) { os << "Multiply"; },
                  [&](const Divide&) { os << "Divide"; },
                  [&](const Remainder&) { os << "Remainder"; },
+                 [&](const BitAnd&) { os << "BitAnd"; },
+                 [&](const BitOr&) { os << "BitOr"; },
+                 [&](const BitXor&) { os << "BitXor"; },
+                 [&](const LeftShift&) { os << "LeftShift"; },
+                 [&](const RightShift&) { os << "RightShift"; },
              },
              op);
 }

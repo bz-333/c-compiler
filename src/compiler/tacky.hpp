@@ -42,8 +42,20 @@ struct TackyDivide {};
 
 struct TackyRemainder {};
 
+struct TackyBitAnd {};
+
+struct TackyBitOr {};
+
+struct TackyBitXor {};
+
+struct TackyLeftShift {};
+
+struct TackyRightShift {};
+
 using TackyBinaryOp = std::variant<TackyAdd, TackySubtract, TackyMultiply,
-                                   TackyDivide, TackyRemainder>;
+                                   TackyDivide, TackyRemainder, TackyBitAnd,
+                                   TackyBitOr, TackyBitXor, TackyLeftShift,
+                                   TackyRightShift>;
 
 struct TackyBinary {
   TackyBinaryOp op;

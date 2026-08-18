@@ -25,6 +25,11 @@ struct Token {
     Star,
     Slash,
     Percent,
+    Ampersand,
+    Pipe,
+    Caret,
+    LeftShift,
+    RightShift,
   };
 
   Kind kind = Kind::Eof;

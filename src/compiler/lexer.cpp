@@ -113,6 +113,31 @@ std::vector<Token> lex(const std::string& source) {
       case '%':
         tokens.push_back({Token::Kind::Percent});
         break;
+      case '&':
+        tokens.push_back({Token::Kind::Ampersand});
+        break;
+      case '|':
+        tokens.push_back({Token::Kind::Pipe});
+        break;
+      case '^':
+        tokens.push_back({Token::Kind::Caret});
+        break;
+      case '<':
+        if (i + 1 < source.size() && source[i + 1] == '<') {
+          tokens.push_back({Token::Kind::LeftShift});
+          ++i;
+        } else {
+          throw CompileError(std::string("unexpected character: '<'"));
+        }
+        break;
+      case '>':
+        if (i + 1 < source.size() && source[i + 1] == '>') {
+          tokens.push_back({Token::Kind::RightShift});
+          ++i;
+        } else {
+          throw CompileError(std::string("unexpected character: '>'"));
+        }
+        break;
       default:
         throw CompileError(std::string("unexpected character: '") + c + "'");
     }

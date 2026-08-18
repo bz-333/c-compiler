@@ -11,6 +11,7 @@ namespace compiler {
 enum class Reg {
   Ax,
   Dx,
+  Ecx,
   R10,
   R11,
 };
@@ -48,6 +49,11 @@ enum class AsmBinaryOp {
   Add,
   Sub,
   Mult,
+  BitAnd,
+  BitOr,
+  BitXor,
+  LeftShift,
+  RightShift,
 };
 
 struct AsmBinary {

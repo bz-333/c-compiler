@@ -48,6 +48,16 @@ const char* kind_name(Token::Kind kind) {
       return "'/'";
     case Token::Kind::Percent:
       return "'%'";
+    case Token::Kind::Ampersand:
+      return "'&'";
+    case Token::Kind::Pipe:
+      return "'|'";
+    case Token::Kind::Caret:
+      return "'^'";
+    case Token::Kind::LeftShift:
+      return "'<<'";
+    case Token::Kind::RightShift:
+      return "'>>'";
   }
   return "?";
 }
@@ -165,6 +175,16 @@ class Parser {
         return Divide{};
       case Token::Kind::Percent:
         return Remainder{};
+      case Token::Kind::Ampersand:
+        return BitAnd{};
+      case Token::Kind::Pipe:
+        return BitOr{};
+      case Token::Kind::Caret:
+        return BitXor{};
+      case Token::Kind::LeftShift:
+        return LeftShift{};
+      case Token::Kind::RightShift:
+        return RightShift{};
       default:
         throw CompileError("expected binary operator, got " + describe(token));
     }
@@ -173,7 +193,9 @@ class Parser {
   static bool is_binary_op(Token::Kind kind) {
     return kind == Token::Kind::Plus || kind == Token::Kind::Minus ||
            kind == Token::Kind::Star || kind == Token::Kind::Slash ||
-           kind == Token::Kind::Percent;
+           kind == Token::Kind::Percent || kind == Token::Kind::Ampersand ||
+           kind == Token::Kind::Pipe || kind == Token::Kind::Caret ||
+           kind == Token::Kind::LeftShift || kind == Token::Kind::RightShift;
   }
 
   static int precedence(Token::Kind kind) {
@@ -185,6 +207,15 @@ class Parser {
       case Token::Kind::Plus:
       case Token::Kind::Minus:
         return 45;
+      case Token::Kind::LeftShift:
+      case Token::Kind::RightShift:
+        return 40;
+      case Token::Kind::Ampersand:
+        return 25;
+      case Token::Kind::Caret:
+        return 20;
+      case Token::Kind::Pipe:
+        return 15;
       default:
         return 0;
     }
