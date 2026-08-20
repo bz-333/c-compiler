@@ -32,6 +32,9 @@ class IrGenerator {
         Overloaded{
             [](const Negate&) -> TackyUnaryOp { return TackyNegate{}; },
             [](const Complement&) -> TackyUnaryOp { return TackyComplement{}; },
+            [](const Not&) -> TackyUnaryOp {
+              throw CompileError("logical operators not yet supported by irgen");
+            },
         },
         op);
   }
@@ -49,6 +52,30 @@ class IrGenerator {
             [](const BitXor&) -> TackyBinaryOp { return TackyBitXor{}; },
             [](const LeftShift&) -> TackyBinaryOp { return TackyLeftShift{}; },
             [](const RightShift&) -> TackyBinaryOp { return TackyRightShift{}; },
+            [](const LessThan&) -> TackyBinaryOp {
+              throw CompileError("logical operators not yet supported by irgen");
+            },
+            [](const LessEqual&) -> TackyBinaryOp {
+              throw CompileError("logical operators not yet supported by irgen");
+            },
+            [](const GreaterThan&) -> TackyBinaryOp {
+              throw CompileError("logical operators not yet supported by irgen");
+            },
+            [](const GreaterEqual&) -> TackyBinaryOp {
+              throw CompileError("logical operators not yet supported by irgen");
+            },
+            [](const Equal&) -> TackyBinaryOp {
+              throw CompileError("logical operators not yet supported by irgen");
+            },
+            [](const NotEqual&) -> TackyBinaryOp {
+              throw CompileError("logical operators not yet supported by irgen");
+            },
+            [](const LogicalAnd&) -> TackyBinaryOp {
+              throw CompileError("logical operators not yet supported by irgen");
+            },
+            [](const LogicalOr&) -> TackyBinaryOp {
+              throw CompileError("logical operators not yet supported by irgen");
+            },
         },
         op);
   }

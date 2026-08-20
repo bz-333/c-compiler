@@ -17,7 +17,9 @@ struct Negate {};
 
 struct Complement {};
 
-using UnaryOp = std::variant<Negate, Complement>;
+struct Not {};
+
+using UnaryOp = std::variant<Negate, Complement, Not>;
 
 struct Add {};
 
@@ -39,8 +41,26 @@ struct LeftShift {};
 
 struct RightShift {};
 
+struct LessThan {};
+
+struct LessEqual {};
+
+struct GreaterThan {};
+
+struct GreaterEqual {};
+
+struct Equal {};
+
+struct NotEqual {};
+
+struct LogicalAnd {};
+
+struct LogicalOr {};
+
 using BinaryOp = std::variant<Add, Subtract, Multiply, Divide, Remainder,
-                              BitAnd, BitOr, BitXor, LeftShift, RightShift>;
+                              BitAnd, BitOr, BitXor, LeftShift, RightShift,
+                              LessThan, LessEqual, GreaterThan, GreaterEqual,
+                              Equal, NotEqual, LogicalAnd, LogicalOr>;
 
 struct Unary;
 

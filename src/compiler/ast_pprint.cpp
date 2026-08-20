@@ -20,6 +20,7 @@ void print_unary_op(const UnaryOp& op, std::ostream& os) {
   std::visit(Overloaded{
                  [&](const Negate&) { os << "Negate"; },
                  [&](const Complement&) { os << "Complement"; },
+                 [&](const Not&) { os << "Not"; },
              },
              op);
 }
@@ -36,6 +37,14 @@ void print_binary_op(const BinaryOp& op, std::ostream& os) {
                  [&](const BitXor&) { os << "BitXor"; },
                  [&](const LeftShift&) { os << "LeftShift"; },
                  [&](const RightShift&) { os << "RightShift"; },
+                 [&](const LessThan&) { os << "LessThan"; },
+                 [&](const LessEqual&) { os << "LessEqual"; },
+                 [&](const GreaterThan&) { os << "GreaterThan"; },
+                 [&](const GreaterEqual&) { os << "GreaterEqual"; },
+                 [&](const Equal&) { os << "Equal"; },
+                 [&](const NotEqual&) { os << "NotEqual"; },
+                 [&](const LogicalAnd&) { os << "LogicalAnd"; },
+                 [&](const LogicalOr&) { os << "LogicalOr"; },
              },
              op);
 }

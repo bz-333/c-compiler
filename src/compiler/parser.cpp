@@ -58,6 +58,24 @@ const char* kind_name(Token::Kind kind) {
       return "'<<'";
     case Token::Kind::RightShift:
       return "'>>'";
+    case Token::Kind::Not:
+      return "'!'";
+    case Token::Kind::DoubleAmpersand:
+      return "'&&'";
+    case Token::Kind::DoublePipe:
+      return "'||'";
+    case Token::Kind::DoubleEquals:
+      return "'=='";
+    case Token::Kind::NotEquals:
+      return "'!='";
+    case Token::Kind::Less:
+      return "'<'";
+    case Token::Kind::Greater:
+      return "'>'";
+    case Token::Kind::LessEqual:
+      return "'<='";
+    case Token::Kind::GreaterEqual:
+      return "'>='";
   }
   return "?";
 }
@@ -137,7 +155,8 @@ class Parser {
     if (token.kind == Token::Kind::Constant) {
       return parse_constant();
     }
-    if (token.kind == Token::Kind::Minus || token.kind == Token::Kind::Tilde) {
+    if (token.kind == Token::Kind::Minus || token.kind == Token::Kind::Tilde ||
+        token.kind == Token::Kind::Not) {
       UnaryOp op = parse_unary_op();
       Exp operand = parse_factor();
       return Exp{std::make_unique<Unary>(Unary{op, std::move(operand)})};
@@ -158,6 +177,9 @@ class Parser {
     }
     if (token.kind == Token::Kind::Tilde) {
       return Complement{};
+    }
+    if (token.kind == Token::Kind::Not) {
+      return Not{};
     }
     throw CompileError("expected unary operator, got " + describe(token));
   }
@@ -185,6 +207,22 @@ class Parser {
         return LeftShift{};
       case Token::Kind::RightShift:
         return RightShift{};
+      case Token::Kind::Less:
+        return LessThan{};
+      case Token::Kind::LessEqual:
+        return LessEqual{};
+      case Token::Kind::Greater:
+        return GreaterThan{};
+      case Token::Kind::GreaterEqual:
+        return GreaterEqual{};
+      case Token::Kind::DoubleEquals:
+        return Equal{};
+      case Token::Kind::NotEquals:
+        return NotEqual{};
+      case Token::Kind::DoubleAmpersand:
+        return LogicalAnd{};
+      case Token::Kind::DoublePipe:
+        return LogicalOr{};
       default:
         throw CompileError("expected binary operator, got " + describe(token));
     }
@@ -195,7 +233,13 @@ class Parser {
            kind == Token::Kind::Star || kind == Token::Kind::Slash ||
            kind == Token::Kind::Percent || kind == Token::Kind::Ampersand ||
            kind == Token::Kind::Pipe || kind == Token::Kind::Caret ||
-           kind == Token::Kind::LeftShift || kind == Token::Kind::RightShift;
+           kind == Token::Kind::LeftShift || kind == Token::Kind::RightShift ||
+           kind == Token::Kind::Less || kind == Token::Kind::Greater ||
+           kind == Token::Kind::LessEqual || kind == Token::Kind::GreaterEqual ||
+           kind == Token::Kind::DoubleEquals ||
+           kind == Token::Kind::NotEquals ||
+           kind == Token::Kind::DoubleAmpersand ||
+           kind == Token::Kind::DoublePipe;
   }
 
   static int precedence(Token::Kind kind) {
@@ -210,12 +254,24 @@ class Parser {
       case Token::Kind::LeftShift:
       case Token::Kind::RightShift:
         return 40;
+      case Token::Kind::Less:
+      case Token::Kind::LessEqual:
+      case Token::Kind::Greater:
+      case Token::Kind::GreaterEqual:
+        return 35;
+      case Token::Kind::DoubleEquals:
+      case Token::Kind::NotEquals:
+        return 30;
       case Token::Kind::Ampersand:
         return 25;
       case Token::Kind::Caret:
         return 20;
       case Token::Kind::Pipe:
         return 15;
+      case Token::Kind::DoubleAmpersand:
+        return 10;
+      case Token::Kind::DoublePipe:
+        return 5;
       default:
         return 0;
     }

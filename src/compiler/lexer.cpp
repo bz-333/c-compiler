@@ -113,11 +113,37 @@ std::vector<Token> lex(const std::string& source) {
       case '%':
         tokens.push_back({Token::Kind::Percent});
         break;
+      case '!':
+        if (i + 1 < source.size() && source[i + 1] == '=') {
+          tokens.push_back({Token::Kind::NotEquals});
+          ++i;
+        } else {
+          tokens.push_back({Token::Kind::Not});
+        }
+        break;
       case '&':
-        tokens.push_back({Token::Kind::Ampersand});
+        if (i + 1 < source.size() && source[i + 1] == '&') {
+          tokens.push_back({Token::Kind::DoubleAmpersand});
+          ++i;
+        } else {
+          tokens.push_back({Token::Kind::Ampersand});
+        }
         break;
       case '|':
-        tokens.push_back({Token::Kind::Pipe});
+        if (i + 1 < source.size() && source[i + 1] == '|') {
+          tokens.push_back({Token::Kind::DoublePipe});
+          ++i;
+        } else {
+          tokens.push_back({Token::Kind::Pipe});
+        }
+        break;
+      case '=':
+        if (i + 1 < source.size() && source[i + 1] == '=') {
+          tokens.push_back({Token::Kind::DoubleEquals});
+          ++i;
+        } else {
+          throw CompileError(std::string("unexpected character: '='"));
+        }
         break;
       case '^':
         tokens.push_back({Token::Kind::Caret});
@@ -126,16 +152,22 @@ std::vector<Token> lex(const std::string& source) {
         if (i + 1 < source.size() && source[i + 1] == '<') {
           tokens.push_back({Token::Kind::LeftShift});
           ++i;
+        } else if (i + 1 < source.size() && source[i + 1] == '=') {
+          tokens.push_back({Token::Kind::LessEqual});
+          ++i;
         } else {
-          throw CompileError(std::string("unexpected character: '<'"));
+          tokens.push_back({Token::Kind::Less});
         }
         break;
       case '>':
         if (i + 1 < source.size() && source[i + 1] == '>') {
           tokens.push_back({Token::Kind::RightShift});
           ++i;
+        } else if (i + 1 < source.size() && source[i + 1] == '=') {
+          tokens.push_back({Token::Kind::GreaterEqual});
+          ++i;
         } else {
-          throw CompileError(std::string("unexpected character: '>'"));
+          tokens.push_back({Token::Kind::Greater});
         }
         break;
       default:

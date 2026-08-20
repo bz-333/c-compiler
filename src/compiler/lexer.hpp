@@ -30,6 +30,15 @@ struct Token {
     Caret,
     LeftShift,
     RightShift,
+    Not,
+    DoubleAmpersand,
+    DoublePipe,
+    DoubleEquals,
+    NotEquals,
+    Less,
+    Greater,
+    LessEqual,
+    GreaterEqual,
   };
 
   Kind kind = Kind::Eof;
