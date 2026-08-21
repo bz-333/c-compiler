@@ -14,6 +14,40 @@ bool is_shift(AsmBinaryOp op) {
   return op == AsmBinaryOp::LeftShift || op == AsmBinaryOp::RightShift;
 }
 
+const char* cond_suffix(CondCode code) {
+  switch (code) {
+    case CondCode::E:
+      return "e";
+    case CondCode::NE:
+      return "ne";
+    case CondCode::G:
+      return "g";
+    case CondCode::GE:
+      return "ge";
+    case CondCode::L:
+      return "l";
+    case CondCode::LE:
+      return "le";
+  }
+  return "";
+}
+
+std::string byte_reg_name(Reg reg) {
+  switch (reg) {
+    case Reg::Ax:
+      return "%al";
+    case Reg::Dx:
+      return "%dl";
+    case Reg::Ecx:
+      return "%cl";
+    case Reg::R10:
+      return "%r10b";
+    case Reg::R11:
+      return "%r11b";
+  }
+  return "%al";
+}
+
 std::string emit_operand(const Operand& operand) {
   return std::visit(
       Overloaded{
@@ -41,6 +75,13 @@ std::string emit_operand(const Operand& operand) {
           },
       },
       operand);
+}
+
+std::string emit_operand_byte(const Operand& operand) {
+  if (const auto* reg = std::get_if<Reg>(&operand)) {
+    return byte_reg_name(*reg);
+  }
+  return emit_operand(operand);
 }
 
 std::string emit_instruction(const Instruction& instruction) {
@@ -94,6 +135,22 @@ std::string emit_instruction(const Instruction& instruction) {
             return "    idivl " + emit_operand(idiv.operand);
           },
           [](const Cdq&) { return std::string{"    cdq"}; },
+          [](const Cmp& cmp) {
+            return "    cmpl " + emit_operand(cmp.src) + ", " +
+                   emit_operand(cmp.dst);
+          },
+          [](const Jmp& jmp) {
+            return "    jmp .L" + jmp.target;
+          },
+          [](const JmpCC& jcc) {
+            return "    j" + std::string(cond_suffix(jcc.code)) + " .L" +
+                   jcc.target;
+          },
+          [](const SetCC& setcc) {
+            return "    set" + std::string(cond_suffix(setcc.code)) + " " +
+                   emit_operand_byte(setcc.operand);
+          },
+          [](const Label& label) { return ".L" + label.name + ":"; },
           [](const AllocateStack& alloc) {
             return "    subq $" + std::to_string(alloc.num_bytes) + ", %rsp";
           },

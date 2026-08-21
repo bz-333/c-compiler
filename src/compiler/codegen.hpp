@@ -68,14 +68,46 @@ struct Idiv {
 
 struct Cdq {};
 
+enum class CondCode {
+  E,
+  NE,
+  G,
+  GE,
+  L,
+  LE,
+};
+
+struct Cmp {
+  Operand src;
+  Operand dst;
+};
+
+struct Jmp {
+  std::string target;
+};
+
+struct JmpCC {
+  CondCode code;
+  std::string target;
+};
+
+struct SetCC {
+  CondCode code;
+  Operand operand;
+};
+
+struct Label {
+  std::string name;
+};
+
 struct Ret {};
 
 struct AllocateStack {
   int num_bytes;
 };
 
-using Instruction = std::variant<Mov, AsmUnary, AsmBinary, Idiv, Cdq, Ret,
-                                 AllocateStack>;
+using Instruction = std::variant<Mov, AsmUnary, AsmBinary, Cmp, Idiv, Cdq,
+                                 Jmp, JmpCC, SetCC, Label, Ret, AllocateStack>;
 
 struct AssemblyFunction {
   std::string name;

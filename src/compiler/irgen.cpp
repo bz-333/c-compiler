@@ -21,10 +21,15 @@ class IrGenerator {
 
  private:
   int counter_ = 0;
+  int label_counter_ = 0;
   std::vector<TackyInstruction> instructions_;
 
   std::string make_temporary() {
     return "tmp." + std::to_string(counter_++);
+  }
+
+  std::string generate_label(const std::string& prefix) {
+    return prefix + std::to_string(label_counter_++);
   }
 
   static TackyUnaryOp gen_op(const UnaryOp& op) {
@@ -32,9 +37,7 @@ class IrGenerator {
         Overloaded{
             [](const Negate&) -> TackyUnaryOp { return TackyNegate{}; },
             [](const Complement&) -> TackyUnaryOp { return TackyComplement{}; },
-            [](const Not&) -> TackyUnaryOp {
-              throw CompileError("logical operators not yet supported by irgen");
-            },
+            [](const Not&) -> TackyUnaryOp { return TackyNot{}; },
         },
         op);
   }
@@ -52,29 +55,21 @@ class IrGenerator {
             [](const BitXor&) -> TackyBinaryOp { return TackyBitXor{}; },
             [](const LeftShift&) -> TackyBinaryOp { return TackyLeftShift{}; },
             [](const RightShift&) -> TackyBinaryOp { return TackyRightShift{}; },
-            [](const LessThan&) -> TackyBinaryOp {
-              throw CompileError("logical operators not yet supported by irgen");
-            },
-            [](const LessEqual&) -> TackyBinaryOp {
-              throw CompileError("logical operators not yet supported by irgen");
-            },
-            [](const GreaterThan&) -> TackyBinaryOp {
-              throw CompileError("logical operators not yet supported by irgen");
-            },
+            [](const LessThan&) -> TackyBinaryOp { return TackyLessThan{}; },
+            [](const LessEqual&) -> TackyBinaryOp { return TackyLessEqual{}; },
+            [](const GreaterThan&) -> TackyBinaryOp { return TackyGreaterThan{}; },
             [](const GreaterEqual&) -> TackyBinaryOp {
-              throw CompileError("logical operators not yet supported by irgen");
+              return TackyGreaterEqual{};
             },
-            [](const Equal&) -> TackyBinaryOp {
-              throw CompileError("logical operators not yet supported by irgen");
-            },
-            [](const NotEqual&) -> TackyBinaryOp {
-              throw CompileError("logical operators not yet supported by irgen");
-            },
+            [](const Equal&) -> TackyBinaryOp { return TackyEqual{}; },
+            [](const NotEqual&) -> TackyBinaryOp { return TackyNotEqual{}; },
             [](const LogicalAnd&) -> TackyBinaryOp {
-              throw CompileError("logical operators not yet supported by irgen");
+              throw CompileError(
+                  "internal error: logical and handled in gen_exp");
             },
             [](const LogicalOr&) -> TackyBinaryOp {
-              throw CompileError("logical operators not yet supported by irgen");
+              throw CompileError(
+                  "internal error: logical or handled in gen_exp");
             },
         },
         op);
@@ -93,6 +88,12 @@ class IrGenerator {
               return dst;
             },
             [&](const std::unique_ptr<Binary>& b) -> TackyVal {
+              if (std::holds_alternative<LogicalAnd>(b->op)) {
+                return gen_logical_and(b);
+              }
+              if (std::holds_alternative<LogicalOr>(b->op)) {
+                return gen_logical_or(b);
+              }
               TackyVal v1 = gen_exp(b->lhs);
               TackyVal v2 = gen_exp(b->rhs);
               TackyVar dst{make_temporary()};
@@ -101,6 +102,38 @@ class IrGenerator {
               return dst;
             }},
         exp);
+  }
+
+  TackyVal gen_logical_and(const std::unique_ptr<Binary>& b) {
+    std::string false_label = generate_label("and_false");
+    std::string end_label = generate_label("and_end");
+    TackyVal v1 = gen_exp(b->lhs);
+    instructions_.push_back(TackyJumpIfZero{v1, false_label});
+    TackyVal v2 = gen_exp(b->rhs);
+    instructions_.push_back(TackyJumpIfZero{v2, false_label});
+    TackyVar dst{make_temporary()};
+    instructions_.push_back(TackyCopy{TackyConstant{1}, dst});
+    instructions_.push_back(TackyJump{end_label});
+    instructions_.push_back(TackyLabel{false_label});
+    instructions_.push_back(TackyCopy{TackyConstant{0}, dst});
+    instructions_.push_back(TackyLabel{end_label});
+    return dst;
+  }
+
+  TackyVal gen_logical_or(const std::unique_ptr<Binary>& b) {
+    std::string true_label = generate_label("or_true");
+    std::string end_label = generate_label("or_end");
+    TackyVal v1 = gen_exp(b->lhs);
+    instructions_.push_back(TackyJumpIfNotZero{v1, true_label});
+    TackyVal v2 = gen_exp(b->rhs);
+    instructions_.push_back(TackyJumpIfNotZero{v2, true_label});
+    TackyVar dst{make_temporary()};
+    instructions_.push_back(TackyCopy{TackyConstant{0}, dst});
+    instructions_.push_back(TackyJump{end_label});
+    instructions_.push_back(TackyLabel{true_label});
+    instructions_.push_back(TackyCopy{TackyConstant{1}, dst});
+    instructions_.push_back(TackyLabel{end_label});
+    return dst;
   }
 
   void gen_statement(const Stmt& stmt) {

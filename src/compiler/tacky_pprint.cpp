@@ -31,6 +31,7 @@ void print_op(const TackyUnaryOp& op, std::ostream& os) {
       Overloaded{
           [&](const TackyNegate&) { os << "Negate"; },
           [&](const TackyComplement&) { os << "Complement"; },
+          [&](const TackyNot&) { os << "Not"; },
       },
       op);
 }
@@ -48,6 +49,12 @@ void print_binop(const TackyBinaryOp& op, std::ostream& os) {
           [&](const TackyBitXor&) { os << "BitXor"; },
           [&](const TackyLeftShift&) { os << "LeftShift"; },
           [&](const TackyRightShift&) { os << "RightShift"; },
+          [&](const TackyEqual&) { os << "Equal"; },
+          [&](const TackyNotEqual&) { os << "NotEqual"; },
+          [&](const TackyLessThan&) { os << "LessThan"; },
+          [&](const TackyLessEqual&) { os << "LessEqual"; },
+          [&](const TackyGreaterThan&) { os << "GreaterThan"; },
+          [&](const TackyGreaterEqual&) { os << "GreaterEqual"; },
       },
       op);
 }
@@ -97,6 +104,50 @@ void print_instruction(const TackyInstruction& instr, std::ostream& os,
             os << '\n';
             indent(os, depth);
             os << ')';
+          },
+          [&](const TackyCopy& c) {
+            indent(os, depth);
+            os << "TackyCopy(\n";
+            indent(os, depth + 1);
+            print_val(c.src, os);
+            os << ",\n";
+            indent(os, depth + 1);
+            print_val(c.dst, os);
+            os << '\n';
+            indent(os, depth);
+            os << ')';
+          },
+          [&](const TackyJump& j) {
+            indent(os, depth);
+            os << "TackyJump(\"" << j.target << "\")";
+          },
+          [&](const TackyJumpIfZero& j) {
+            indent(os, depth);
+            os << "TackyJumpIfZero(\n";
+            indent(os, depth + 1);
+            print_val(j.condition, os);
+            os << ",\n";
+            indent(os, depth + 1);
+            os << '"' << j.target << '"';
+            os << '\n';
+            indent(os, depth);
+            os << ')';
+          },
+          [&](const TackyJumpIfNotZero& j) {
+            indent(os, depth);
+            os << "TackyJumpIfNotZero(\n";
+            indent(os, depth + 1);
+            print_val(j.condition, os);
+            os << ",\n";
+            indent(os, depth + 1);
+            os << '"' << j.target << '"';
+            os << '\n';
+            indent(os, depth);
+            os << ')';
+          },
+          [&](const TackyLabel& l) {
+            indent(os, depth);
+            os << "TackyLabel(\"" << l.name << "\")";
           }},
       instr);
 }

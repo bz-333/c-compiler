@@ -20,7 +20,9 @@ struct TackyNegate {};
 
 struct TackyComplement {};
 
-using TackyUnaryOp = std::variant<TackyNegate, TackyComplement>;
+struct TackyNot {};
+
+using TackyUnaryOp = std::variant<TackyNegate, TackyComplement, TackyNot>;
 
 struct TackyReturn {
   TackyVal src;
@@ -52,10 +54,24 @@ struct TackyLeftShift {};
 
 struct TackyRightShift {};
 
+struct TackyEqual {};
+
+struct TackyNotEqual {};
+
+struct TackyLessThan {};
+
+struct TackyLessEqual {};
+
+struct TackyGreaterThan {};
+
+struct TackyGreaterEqual {};
+
 using TackyBinaryOp = std::variant<TackyAdd, TackySubtract, TackyMultiply,
                                    TackyDivide, TackyRemainder, TackyBitAnd,
                                    TackyBitOr, TackyBitXor, TackyLeftShift,
-                                   TackyRightShift>;
+                                   TackyRightShift, TackyEqual, TackyNotEqual,
+                                   TackyLessThan, TackyLessEqual,
+                                   TackyGreaterThan, TackyGreaterEqual>;
 
 struct TackyBinary {
   TackyBinaryOp op;
@@ -64,7 +80,32 @@ struct TackyBinary {
   TackyVal dst;
 };
 
-using TackyInstruction = std::variant<TackyReturn, TackyUnary, TackyBinary>;
+struct TackyCopy {
+  TackyVal src;
+  TackyVal dst;
+};
+
+struct TackyJump {
+  std::string target;
+};
+
+struct TackyJumpIfZero {
+  TackyVal condition;
+  std::string target;
+};
+
+struct TackyJumpIfNotZero {
+  TackyVal condition;
+  std::string target;
+};
+
+struct TackyLabel {
+  std::string name;
+};
+
+using TackyInstruction =
+    std::variant<TackyReturn, TackyUnary, TackyBinary, TackyCopy, TackyJump,
+                 TackyJumpIfZero, TackyJumpIfNotZero, TackyLabel>;
 
 struct TackyFunction {
   std::string name;

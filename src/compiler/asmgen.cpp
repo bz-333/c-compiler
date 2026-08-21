@@ -26,6 +26,10 @@ AsmUnaryOp convert_op(const TackyUnaryOp& op) {
       Overloaded{
           [](const TackyNegate&) { return AsmUnaryOp::Negate; },
           [](const TackyComplement&) { return AsmUnaryOp::Complement; },
+          [](const TackyNot&) -> AsmUnaryOp {
+            throw CompileError(
+                "internal error: logical not handled in convert_tacky");
+          },
       },
       op);
 }
@@ -41,13 +45,24 @@ AssemblyFunction convert_tacky(const TackyProgram& program) {
             },
             [&](const TackyUnary& u) {
               Operand dst = convert_val(u.dst);
-              instructions.push_back(Mov{convert_val(u.src), dst});
-              instructions.push_back(AsmUnary{convert_op(u.op), dst});
+              if (std::holds_alternative<TackyNot>(u.op)) {
+                instructions.push_back(Cmp{Imm{0}, convert_val(u.src)});
+                instructions.push_back(Mov{Imm{0}, dst});
+                instructions.push_back(SetCC{CondCode::E, dst});
+              } else {
+                instructions.push_back(Mov{convert_val(u.src), dst});
+                instructions.push_back(AsmUnary{convert_op(u.op), dst});
+              }
             },
             [&](const TackyBinary& b) {
               Operand src1 = convert_val(b.src1);
               Operand src2 = convert_val(b.src2);
               Operand dst = convert_val(b.dst);
+              auto emit_cmp = [&](CondCode code) {
+                instructions.push_back(Cmp{src2, src1});
+                instructions.push_back(Mov{Imm{0}, dst});
+                instructions.push_back(SetCC{code, dst});
+              };
               std::visit(
                   Overloaded{
                       [&](const TackyAdd&) {
@@ -102,8 +117,32 @@ AssemblyFunction convert_tacky(const TackyProgram& program) {
                         instructions.push_back(
                             AsmBinary{AsmBinaryOp::RightShift, src2, dst});
                       },
+                      [&](const TackyEqual&) { emit_cmp(CondCode::E); },
+                      [&](const TackyNotEqual&) { emit_cmp(CondCode::NE); },
+                      [&](const TackyLessThan&) { emit_cmp(CondCode::L); },
+                      [&](const TackyLessEqual&) { emit_cmp(CondCode::LE); },
+                      [&](const TackyGreaterThan&) { emit_cmp(CondCode::G); },
+                      [&](const TackyGreaterEqual&) { emit_cmp(CondCode::GE); },
                   },
                   b.op);
+            },
+            [&](const TackyCopy& c) {
+              instructions.push_back(
+                  Mov{convert_val(c.src), convert_val(c.dst)});
+            },
+            [&](const TackyJump& j) {
+              instructions.push_back(Jmp{j.target});
+            },
+            [&](const TackyJumpIfZero& j) {
+              instructions.push_back(Cmp{Imm{0}, convert_val(j.condition)});
+              instructions.push_back(JmpCC{CondCode::E, j.target});
+            },
+            [&](const TackyJumpIfNotZero& j) {
+              instructions.push_back(Cmp{Imm{0}, convert_val(j.condition)});
+              instructions.push_back(JmpCC{CondCode::NE, j.target});
+            },
+            [&](const TackyLabel& l) {
+              instructions.push_back(Label{l.name});
             }},
         instr);
   }
@@ -151,6 +190,16 @@ int replace_pseudos(std::vector<Instruction>& instructions) {
             [&](Idiv& idiv) {
               idiv.operand = replace_pseudo(idiv.operand, mapping, offset);
             },
+            [&](Cmp& cmp) {
+              cmp.src = replace_pseudo(cmp.src, mapping, offset);
+              cmp.dst = replace_pseudo(cmp.dst, mapping, offset);
+            },
+            [&](SetCC& setcc) {
+              setcc.operand = replace_pseudo(setcc.operand, mapping, offset);
+            },
+            [&](Jmp&) {},
+            [&](JmpCC&) {},
+            [&](Label&) {},
             [&](Cdq&) {},
             [&](Ret&) {},
             [&](AllocateStack&) {},
@@ -199,6 +248,17 @@ void fixup(std::vector<Instruction>& instructions, int stack_size) {
               if (std::holds_alternative<Imm>(idiv.operand)) {
                 fixed.push_back(Mov{idiv.operand, Reg::R10});
                 fixed.push_back(Idiv{Reg::R10});
+                rewritten = true;
+              }
+            },
+            [&](Cmp& cmp) {
+              if (is_memory(cmp.src) && is_memory(cmp.dst)) {
+                fixed.push_back(Mov{cmp.src, Reg::R10});
+                fixed.push_back(Cmp{Reg::R10, cmp.dst});
+                rewritten = true;
+              } else if (std::holds_alternative<Imm>(cmp.dst)) {
+                fixed.push_back(Mov{cmp.dst, Reg::R11});
+                fixed.push_back(Cmp{cmp.src, Reg::R11});
                 rewritten = true;
               }
             },
