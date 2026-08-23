@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "compiler/compiler.hpp"
+#include "compiler/unique_names.hpp"
 
 namespace compiler {
 
@@ -30,13 +31,10 @@ class IrGenerator {
   }
 
  private:
-  int counter_ = 0;
   int label_counter_ = 0;
   std::vector<TackyInstruction> instructions_;
 
-  std::string make_temporary() {
-    return "tmp." + std::to_string(counter_++);
-  }
+  std::string make_temporary() { return make_unique_name("tmp"); }
 
   std::string generate_label(const std::string& prefix) {
     return prefix + std::to_string(label_counter_++);

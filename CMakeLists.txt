@@ -46,6 +46,9 @@ add_library(compiler STATIC
     src/compiler/ast_pprint.cpp
     src/compiler/tacky_pprint.cpp
     src/compiler/irgen.cpp
+    src/compiler/resolve_vars.cpp
+    src/compiler/validate.cpp
+    src/compiler/unique_names.cpp
     src/compiler/codegen.cpp
     src/compiler/asmgen.cpp
     src/compiler/emit.cpp

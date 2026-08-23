@@ -9,6 +9,7 @@ class Driver {
     Compile,
     Lex,
     Parse,
+    Validate,
     Codegen,
     PrettyPrint,
     Tacky,

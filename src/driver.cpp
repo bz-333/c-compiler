@@ -18,6 +18,7 @@
 #include "compiler/ast_pprint.hpp"
 #include "compiler/tacky.hpp"
 #include "compiler/tacky_pprint.hpp"
+#include "compiler/validate.hpp"
 
 namespace {
 
@@ -92,6 +93,8 @@ int Driver::parse_args(int argc, char** argv, Options& opts) {
       opts.stage = Stage::Lex;
     } else if (arg == "--parse") {
       opts.stage = Stage::Parse;
+    } else if (arg == "--validate") {
+      opts.stage = Stage::Validate;
     } else if (arg == "--codegen") {
       opts.stage = Stage::Codegen;
     } else if (arg == "--pprint") {
@@ -172,6 +175,11 @@ int Driver::compile_one(const Options& opts, const std::string& input,
 
     if (opts.stage == Stage::PrettyPrint) {
       compiler::pretty_print(program, std::cout);
+      return 0;
+    }
+
+    program = compiler::validate(std::move(program));
+    if (opts.stage == Stage::Validate) {
       return 0;
     }
 
@@ -272,6 +280,7 @@ void Driver::print_usage(const char* program) {
             << "Options:\n"
             << "  --lex       Run the lexer only; produce no output\n"
             << "  --parse     Run the lexer and parser; produce no output\n"
+            << "  --validate  Run semantic analysis; produce no output\n"
             << "  --codegen   Run all stages up to code generation; produce no output\n"
             << "  --pprint    Parse and print the AST\n"
             << "  --tacky     Generate TACKY IR; produce no output\n"
