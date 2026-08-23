@@ -53,6 +53,7 @@ void print_exp(const Exp& exp, std::ostream& os) {
   std::visit(
       Overloaded{
           [&](const Constant& c) { os << "Constant(" << c.value << ")"; },
+          [&](const Var& v) { os << "Var(\"" << v.name << "\")"; },
           [&](const std::unique_ptr<Unary>& u) {
             os << "Unary(";
             print_unary_op(u->op, os);
@@ -68,21 +69,70 @@ void print_exp(const Exp& exp, std::ostream& os) {
             os << ", ";
             print_exp(b->rhs, os);
             os << ')';
+          },
+          [&](const std::unique_ptr<Assignment>& a) {
+            os << "Assignment(";
+            print_exp(a->lhs, os);
+            os << ", ";
+            print_exp(a->rhs, os);
+            os << ')';
           }},
       exp);
 }
 
 void print_stmt(const Stmt& stmt, std::ostream& os, int depth) {
   std::visit(
-      Overloaded{[&](const Return& r) {
-        os << "Return(\n";
-        indent(os, depth + 1);
-        print_exp(r.exp, os);
-        os << '\n';
-        indent(os, depth);
-        os << ')';
-      }},
+      Overloaded{
+          [&](const Return& r) {
+            indent(os, depth);
+            os << "Return(\n";
+            indent(os, depth + 1);
+            print_exp(r.exp, os);
+            os << '\n';
+            indent(os, depth);
+            os << ')';
+          },
+          [&](const Expression& e) {
+            indent(os, depth);
+            os << "Expression(\n";
+            indent(os, depth + 1);
+            print_exp(e.exp, os);
+            os << '\n';
+            indent(os, depth);
+            os << ')';
+          },
+          [&](const Null&) {
+            indent(os, depth);
+            os << "Null";
+          }},
       stmt);
+}
+
+void print_declaration(const Declaration& decl, std::ostream& os, int depth) {
+  indent(os, depth);
+  os << "Declaration(\n";
+  indent(os, depth + 1);
+  os << "name=\"" << decl.name << "\",\n";
+  indent(os, depth + 1);
+  os << "init=";
+  if (decl.init) {
+    print_exp(*decl.init, os);
+  } else {
+    os << "(none)";
+  }
+  os << '\n';
+  indent(os, depth);
+  os << ')';
+}
+
+void print_block_item(const BlockItem& item, std::ostream& os, int depth) {
+  std::visit(Overloaded{
+                 [&](const Stmt& stmt) { print_stmt(stmt, os, depth); },
+                 [&](const Declaration& decl) {
+                   print_declaration(decl, os, depth);
+                 },
+             },
+             item);
 }
 
 void print_function(const Function& func, std::ostream& os, int depth) {
@@ -90,9 +140,13 @@ void print_function(const Function& func, std::ostream& os, int depth) {
   indent(os, depth + 1);
   os << "name=\"" << func.name << "\",\n";
   indent(os, depth + 1);
-  os << "body=";
-  print_stmt(func.body, os, depth + 1);
-  os << '\n';
+  os << "body=[\n";
+  for (const BlockItem& item : func.body) {
+    print_block_item(item, os, depth + 2);
+    os << '\n';
+  }
+  indent(os, depth + 1);
+  os << "]\n";
   indent(os, depth);
   os << ')';
 }

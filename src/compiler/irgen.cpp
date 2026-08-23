@@ -14,7 +14,17 @@ namespace {
 class IrGenerator {
  public:
   TackyProgram generate(const Program& program) {
-    gen_statement(program.func.body);
+    for (const BlockItem& item : program.func.body) {
+      std::visit(
+          Overloaded{
+              [&](const Declaration&) {
+                throw CompileError(
+                    "declarations not yet supported by irgen");
+              },
+              [&](const Stmt& stmt) { gen_statement(stmt); },
+          },
+          item);
+    }
     return TackyProgram{
         TackyFunction{program.func.name, std::move(instructions_)}};
   }
@@ -81,6 +91,9 @@ class IrGenerator {
             [&](const Constant& c) -> TackyVal {
               return TackyConstant{c.value};
             },
+            [&](const Var&) -> TackyVal {
+              throw CompileError("variables not yet supported by irgen");
+            },
             [&](const std::unique_ptr<Unary>& u) -> TackyVal {
               TackyVal src = gen_exp(u->operand);
               TackyVar dst{make_temporary()};
@@ -100,6 +113,9 @@ class IrGenerator {
               instructions_.push_back(
                   TackyBinary{gen_binop(b->op), v1, v2, dst});
               return dst;
+            },
+            [&](const std::unique_ptr<Assignment>&) -> TackyVal {
+              throw CompileError("assignment not yet supported by irgen");
             }},
         exp);
   }
@@ -138,10 +154,17 @@ class IrGenerator {
 
   void gen_statement(const Stmt& stmt) {
     std::visit(
-        Overloaded{[&](const Return& r) {
-          TackyVal val = gen_exp(r.exp);
-          instructions_.push_back(TackyReturn{val});
-        }},
+        Overloaded{
+            [&](const Return& r) {
+              TackyVal val = gen_exp(r.exp);
+              instructions_.push_back(TackyReturn{val});
+            },
+            [&](const Expression&) {
+              throw CompileError(
+                  "expression statements not yet supported by irgen");
+            },
+            [&](const Null&) {},
+        },
         stmt);
   }
 };

@@ -35,6 +35,7 @@ struct Token {
     DoublePipe,
     DoubleEquals,
     NotEquals,
+    Equals,
     Less,
     Greater,
     LessEqual,

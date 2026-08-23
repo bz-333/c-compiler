@@ -142,7 +142,7 @@ std::vector<Token> lex(const std::string& source) {
           tokens.push_back({Token::Kind::DoubleEquals});
           ++i;
         } else {
-          throw CompileError(std::string("unexpected character: '='"));
+          tokens.push_back({Token::Kind::Equals});
         }
         break;
       case '^':

@@ -68,6 +68,8 @@ const char* kind_name(Token::Kind kind) {
       return "'=='";
     case Token::Kind::NotEquals:
       return "'!='";
+    case Token::Kind::Equals:
+      return "'='";
     case Token::Kind::Less:
       return "'<'";
     case Token::Kind::Greater:
@@ -124,16 +126,47 @@ class Parser {
     expect(Token::Kind::Keyword_Void);
     expect(Token::Kind::CloseParen);
     expect(Token::Kind::OpenBrace);
-    Stmt body = parse_statement();
+    std::vector<BlockItem> body;
+    while (peek().kind != Token::Kind::CloseBrace) {
+      body.push_back(parse_block_item());
+    }
     expect(Token::Kind::CloseBrace);
     return Function{name, std::move(body)};
   }
 
+  BlockItem parse_block_item() {
+    if (peek().kind == Token::Kind::Keyword_Int) {
+      return parse_declaration();
+    }
+    return parse_statement();
+  }
+
+  Declaration parse_declaration() {
+    expect(Token::Kind::Keyword_Int);
+    std::string name = expect(Token::Kind::Identifier).identifier;
+    std::optional<Exp> init;
+    if (peek().kind == Token::Kind::Equals) {
+      advance();
+      init = parse_exp();
+    }
+    expect(Token::Kind::Semicolon);
+    return Declaration{name, std::move(init)};
+  }
+
   Stmt parse_statement() {
-    expect(Token::Kind::Keyword_Return);
+    if (peek().kind == Token::Kind::Keyword_Return) {
+      advance();
+      Exp exp = parse_exp();
+      expect(Token::Kind::Semicolon);
+      return Return{std::move(exp)};
+    }
+    if (peek().kind == Token::Kind::Semicolon) {
+      advance();
+      return Null{};
+    }
     Exp exp = parse_exp();
     expect(Token::Kind::Semicolon);
-    return Return{std::move(exp)};
+    return Expression{std::move(exp)};
   }
 
   Exp parse_exp(int min_prec = 0) {
@@ -143,9 +176,16 @@ class Parser {
       if (!is_binary_op(kind) || precedence(kind) < min_prec) {
         break;
       }
-      BinaryOp op = parse_binop();
-      Exp right = parse_exp(precedence(kind) + 1);
-      left = Exp{std::make_unique<Binary>(Binary{op, std::move(left), std::move(right)})};
+      if (kind == Token::Kind::Equals) {
+        advance();
+        Exp right = parse_exp(precedence(kind));
+        left = Exp{std::make_unique<Assignment>(
+            Assignment{std::move(left), std::move(right)})};
+      } else {
+        BinaryOp op = parse_binop();
+        Exp right = parse_exp(precedence(kind) + 1);
+        left = Exp{std::make_unique<Binary>(Binary{op, std::move(left), std::move(right)})};
+      }
     }
     return left;
   }
@@ -154,6 +194,10 @@ class Parser {
     const Token& token = peek();
     if (token.kind == Token::Kind::Constant) {
       return parse_constant();
+    }
+    if (token.kind == Token::Kind::Identifier) {
+      std::string name = advance().identifier;
+      return Var{name};
     }
     if (token.kind == Token::Kind::Minus || token.kind == Token::Kind::Tilde ||
         token.kind == Token::Kind::Not) {
@@ -239,11 +283,13 @@ class Parser {
            kind == Token::Kind::DoubleEquals ||
            kind == Token::Kind::NotEquals ||
            kind == Token::Kind::DoubleAmpersand ||
-           kind == Token::Kind::DoublePipe;
+           kind == Token::Kind::DoublePipe || kind == Token::Kind::Equals;
   }
 
   static int precedence(Token::Kind kind) {
     switch (kind) {
+      case Token::Kind::Equals:
+        return 1;
       case Token::Kind::Star:
       case Token::Kind::Slash:
       case Token::Kind::Percent:

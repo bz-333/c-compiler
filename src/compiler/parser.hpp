@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -66,7 +67,14 @@ struct Unary;
 
 struct Binary;
 
-using Exp = std::variant<Constant, std::unique_ptr<Unary>, std::unique_ptr<Binary>>;
+struct Assignment;
+
+struct Var {
+  std::string name;
+};
+
+using Exp = std::variant<Constant, Var, std::unique_ptr<Unary>,
+                         std::unique_ptr<Binary>, std::unique_ptr<Assignment>>;
 
 struct Unary {
   UnaryOp op;
@@ -79,15 +87,33 @@ struct Binary {
   Exp rhs;
 };
 
+struct Assignment {
+  Exp lhs;
+  Exp rhs;
+};
+
 struct Return {
   Exp exp;
 };
 
-using Stmt = std::variant<Return>;
+struct Expression {
+  Exp exp;
+};
+
+struct Null {};
+
+using Stmt = std::variant<Return, Expression, Null>;
+
+struct Declaration {
+  std::string name;
+  std::optional<Exp> init;
+};
+
+using BlockItem = std::variant<Stmt, Declaration>;
 
 struct Function {
   std::string name;
-  Stmt body;
+  std::vector<BlockItem> body;
 };
 
 struct Program {
