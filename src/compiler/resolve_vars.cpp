@@ -62,6 +62,11 @@ class VarResolver {
               return Expression{resolve_exp(e.exp)};
             },
             [&](const Null&) -> Stmt { return Null{}; },
+            [&](const Goto& g) -> Stmt { return Goto{g.name}; },
+            [&](const std::unique_ptr<Labeled>& l) -> Stmt {
+              return Stmt{std::make_unique<Labeled>(
+                  Labeled{l->name, resolve_statement(l->statement)})};
+            },
             [&](const std::unique_ptr<If>& i) -> Stmt {
               Exp condition = resolve_exp(i->condition);
               Stmt then = resolve_statement(i->then);

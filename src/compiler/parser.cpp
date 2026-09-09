@@ -24,6 +24,8 @@ const char* kind_name(Token::Kind kind) {
       return "'if'";
     case Token::Kind::Keyword_Else:
       return "'else'";
+    case Token::Kind::Keyword_Goto:
+      return "'goto'";
     case Token::Kind::Identifier:
       return "identifier";
     case Token::Kind::Constant:
@@ -128,6 +130,8 @@ class Parser {
 
   const Token& peek() const { return tokens_[pos_]; }
 
+  const Token& peek_next() const { return tokens_[pos_ + 1]; }
+
   const Token& advance() {
     const Token& token = tokens_[pos_];
     if (token.kind != Token::Kind::Eof) {
@@ -203,6 +207,20 @@ class Parser {
       }
       return Stmt{std::make_unique<If>(
           If{std::move(condition), std::move(then), std::move(else_stmt)})};
+    }
+    if (peek().kind == Token::Kind::Keyword_Goto) {
+      advance();
+      std::string name = expect(Token::Kind::Identifier).identifier;
+      expect(Token::Kind::Semicolon);
+      return Goto{name};
+    }
+    if (peek().kind == Token::Kind::Identifier &&
+        peek_next().kind == Token::Kind::Colon) {
+      std::string name = advance().identifier;
+      advance();
+      Stmt statement = parse_statement();
+      return Stmt{std::make_unique<Labeled>(
+          Labeled{name, std::move(statement)})};
     }
     if (peek().kind == Token::Kind::Semicolon) {
       advance();

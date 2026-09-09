@@ -233,6 +233,13 @@ class IrGenerator {
             },
             [&](const Expression& e) { gen_exp(e.exp); },
             [&](const Null&) {},
+            [&](const Goto& g) {
+              instructions_.push_back(TackyJump{g.name});
+            },
+            [&](const std::unique_ptr<Labeled>& l) {
+              instructions_.push_back(TackyLabel{l->name});
+              gen_statement(l->statement);
+            },
             [&](const std::unique_ptr<If>& i) {
               TackyVal cond = gen_exp(i->condition);
               if (i->else_) {

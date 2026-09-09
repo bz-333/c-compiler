@@ -143,9 +143,21 @@ struct Expression {
 
 struct Null {};
 
+struct Goto {
+  std::string name;
+};
+
+struct Labeled;
+
 struct If;
 
-using Stmt = std::variant<Return, Expression, Null, std::unique_ptr<If>>;
+using Stmt = std::variant<Return, Expression, Null, std::unique_ptr<If>, Goto,
+                          std::unique_ptr<Labeled>>;
+
+struct Labeled {
+  std::string name;
+  Stmt statement;
+};
 
 struct If {
   Exp condition;

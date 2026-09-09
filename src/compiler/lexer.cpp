@@ -34,6 +34,9 @@ Token::Kind keyword_kind(const std::string& word) {
   if (word == "else") {
     return Token::Kind::Keyword_Else;
   }
+  if (word == "goto") {
+    return Token::Kind::Keyword_Goto;
+  }
   return Token::Kind::Identifier;
 }
 

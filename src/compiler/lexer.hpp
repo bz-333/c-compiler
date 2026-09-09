@@ -13,6 +13,7 @@ struct Token {
     Keyword_Return,
     Keyword_If,
     Keyword_Else,
+    Keyword_Goto,
     Identifier,
     Constant,
     OpenParen,

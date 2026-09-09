@@ -153,6 +153,22 @@ void print_stmt(const Stmt& stmt, std::ostream& os, int depth) {
             indent(os, depth);
             os << "Null";
           },
+          [&](const Goto& g) {
+            indent(os, depth);
+            os << "Goto(\"" << g.name << "\")";
+          },
+          [&](const std::unique_ptr<Labeled>& l) {
+            indent(os, depth);
+            os << "Labeled(\n";
+            indent(os, depth + 1);
+            os << "name=\"" << l->name << "\",\n";
+            indent(os, depth + 1);
+            os << "statement=\n";
+            print_stmt(l->statement, os, depth + 2);
+            os << '\n';
+            indent(os, depth);
+            os << ')';
+          },
           [&](const std::unique_ptr<If>& i) {
             indent(os, depth);
             os << "If(\n";
