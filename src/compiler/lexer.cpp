@@ -94,6 +94,9 @@ std::vector<Token> lex(const std::string& source) {
         if (i + 1 < source.size() && source[i + 1] == '-') {
           tokens.push_back({Token::Kind::DoubleMinus});
           ++i;
+        } else if (i + 1 < source.size() && source[i + 1] == '=') {
+          tokens.push_back({Token::Kind::MinusEquals});
+          ++i;
         } else {
           tokens.push_back({Token::Kind::Minus});
         }
@@ -102,16 +105,39 @@ std::vector<Token> lex(const std::string& source) {
         tokens.push_back({Token::Kind::Tilde});
         break;
       case '+':
-        tokens.push_back({Token::Kind::Plus});
+        if (i + 1 < source.size() && source[i + 1] == '+') {
+          tokens.push_back({Token::Kind::DoublePlus});
+          ++i;
+        } else if (i + 1 < source.size() && source[i + 1] == '=') {
+          tokens.push_back({Token::Kind::PlusEquals});
+          ++i;
+        } else {
+          tokens.push_back({Token::Kind::Plus});
+        }
         break;
       case '*':
-        tokens.push_back({Token::Kind::Star});
+        if (i + 1 < source.size() && source[i + 1] == '=') {
+          tokens.push_back({Token::Kind::StarEquals});
+          ++i;
+        } else {
+          tokens.push_back({Token::Kind::Star});
+        }
         break;
       case '/':
-        tokens.push_back({Token::Kind::Slash});
+        if (i + 1 < source.size() && source[i + 1] == '=') {
+          tokens.push_back({Token::Kind::SlashEquals});
+          ++i;
+        } else {
+          tokens.push_back({Token::Kind::Slash});
+        }
         break;
       case '%':
-        tokens.push_back({Token::Kind::Percent});
+        if (i + 1 < source.size() && source[i + 1] == '=') {
+          tokens.push_back({Token::Kind::PercentEquals});
+          ++i;
+        } else {
+          tokens.push_back({Token::Kind::Percent});
+        }
         break;
       case '!':
         if (i + 1 < source.size() && source[i + 1] == '=') {
@@ -125,6 +151,9 @@ std::vector<Token> lex(const std::string& source) {
         if (i + 1 < source.size() && source[i + 1] == '&') {
           tokens.push_back({Token::Kind::DoubleAmpersand});
           ++i;
+        } else if (i + 1 < source.size() && source[i + 1] == '=') {
+          tokens.push_back({Token::Kind::AmpersandEquals});
+          ++i;
         } else {
           tokens.push_back({Token::Kind::Ampersand});
         }
@@ -132,6 +161,9 @@ std::vector<Token> lex(const std::string& source) {
       case '|':
         if (i + 1 < source.size() && source[i + 1] == '|') {
           tokens.push_back({Token::Kind::DoublePipe});
+          ++i;
+        } else if (i + 1 < source.size() && source[i + 1] == '=') {
+          tokens.push_back({Token::Kind::PipeEquals});
           ++i;
         } else {
           tokens.push_back({Token::Kind::Pipe});
@@ -146,10 +178,19 @@ std::vector<Token> lex(const std::string& source) {
         }
         break;
       case '^':
-        tokens.push_back({Token::Kind::Caret});
+        if (i + 1 < source.size() && source[i + 1] == '=') {
+          tokens.push_back({Token::Kind::CaretEquals});
+          ++i;
+        } else {
+          tokens.push_back({Token::Kind::Caret});
+        }
         break;
       case '<':
-        if (i + 1 < source.size() && source[i + 1] == '<') {
+        if (i + 2 < source.size() && source[i + 1] == '<' &&
+            source[i + 2] == '=') {
+          tokens.push_back({Token::Kind::LeftShiftEquals});
+          i += 2;
+        } else if (i + 1 < source.size() && source[i + 1] == '<') {
           tokens.push_back({Token::Kind::LeftShift});
           ++i;
         } else if (i + 1 < source.size() && source[i + 1] == '=') {
@@ -160,7 +201,11 @@ std::vector<Token> lex(const std::string& source) {
         }
         break;
       case '>':
-        if (i + 1 < source.size() && source[i + 1] == '>') {
+        if (i + 2 < source.size() && source[i + 1] == '>' &&
+            source[i + 2] == '=') {
+          tokens.push_back({Token::Kind::RightShiftEquals});
+          i += 2;
+        } else if (i + 1 < source.size() && source[i + 1] == '>') {
           tokens.push_back({Token::Kind::RightShift});
           ++i;
         } else if (i + 1 < source.size() && source[i + 1] == '=') {

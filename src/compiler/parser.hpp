@@ -69,12 +69,28 @@ struct Binary;
 
 struct Assignment;
 
+struct CompoundAssignment;
+
+struct Prefix;
+
+struct Postfix;
+
 struct Var {
   std::string name;
 };
 
+struct Increment {};
+
+struct Decrement {};
+
+using PrefixOp = std::variant<Increment, Decrement>;
+
+using PostfixOp = std::variant<Increment, Decrement>;
+
 using Exp = std::variant<Constant, Var, std::unique_ptr<Unary>,
-                         std::unique_ptr<Binary>, std::unique_ptr<Assignment>>;
+                         std::unique_ptr<Binary>, std::unique_ptr<Assignment>,
+                         std::unique_ptr<CompoundAssignment>,
+                         std::unique_ptr<Prefix>, std::unique_ptr<Postfix>>;
 
 struct Unary {
   UnaryOp op;
@@ -90,6 +106,22 @@ struct Binary {
 struct Assignment {
   Exp lhs;
   Exp rhs;
+};
+
+struct CompoundAssignment {
+  BinaryOp op;
+  Exp lhs;
+  Exp rhs;
+};
+
+struct Prefix {
+  PrefixOp op;
+  Exp operand;
+};
+
+struct Postfix {
+  PostfixOp op;
+  Exp operand;
 };
 
 struct Return {

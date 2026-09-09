@@ -92,6 +92,30 @@ class VarResolver {
               return Exp{std::make_unique<Assignment>(Assignment{
                   resolve_exp(a->lhs), resolve_exp(a->rhs)})};
             },
+            [&](const std::unique_ptr<CompoundAssignment>& c) -> Exp {
+              if (!std::holds_alternative<Var>(c->lhs)) {
+                throw CompileError("invalid lvalue in assignment");
+              }
+              return Exp{std::make_unique<CompoundAssignment>(
+                  CompoundAssignment{c->op, resolve_exp(c->lhs),
+                                     resolve_exp(c->rhs)})};
+            },
+            [&](const std::unique_ptr<Prefix>& p) -> Exp {
+              Exp operand = resolve_exp(p->operand);
+              if (!std::holds_alternative<Var>(operand)) {
+                throw CompileError("invalid lvalue in increment/decrement");
+              }
+              return Exp{std::make_unique<Prefix>(
+                  Prefix{p->op, std::move(operand)})};
+            },
+            [&](const std::unique_ptr<Postfix>& p) -> Exp {
+              Exp operand = resolve_exp(p->operand);
+              if (!std::holds_alternative<Var>(operand)) {
+                throw CompileError("invalid lvalue in increment/decrement");
+              }
+              return Exp{std::make_unique<Postfix>(
+                  Postfix{p->op, std::move(operand)})};
+            },
         },
         exp);
   }

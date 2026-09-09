@@ -25,6 +25,22 @@ void print_unary_op(const UnaryOp& op, std::ostream& os) {
              op);
 }
 
+void print_prefix_op(const PrefixOp& op, std::ostream& os) {
+  std::visit(Overloaded{
+                 [&](const Increment&) { os << "Increment"; },
+                 [&](const Decrement&) { os << "Decrement"; },
+             },
+             op);
+}
+
+void print_postfix_op(const PostfixOp& op, std::ostream& os) {
+  std::visit(Overloaded{
+                 [&](const Increment&) { os << "Increment"; },
+                 [&](const Decrement&) { os << "Decrement"; },
+             },
+             op);
+}
+
 void print_binary_op(const BinaryOp& op, std::ostream& os) {
   std::visit(Overloaded{
                  [&](const Add&) { os << "Add"; },
@@ -75,6 +91,29 @@ void print_exp(const Exp& exp, std::ostream& os) {
             print_exp(a->lhs, os);
             os << ", ";
             print_exp(a->rhs, os);
+            os << ')';
+          },
+          [&](const std::unique_ptr<CompoundAssignment>& c) {
+            os << "CompoundAssignment(";
+            print_binary_op(c->op, os);
+            os << ", ";
+            print_exp(c->lhs, os);
+            os << ", ";
+            print_exp(c->rhs, os);
+            os << ')';
+          },
+          [&](const std::unique_ptr<Prefix>& p) {
+            os << "Prefix(";
+            print_prefix_op(p->op, os);
+            os << ", ";
+            print_exp(p->operand, os);
+            os << ')';
+          },
+          [&](const std::unique_ptr<Postfix>& p) {
+            os << "Postfix(";
+            print_postfix_op(p->op, os);
+            os << ", ";
+            print_exp(p->operand, os);
             os << ')';
           }},
       exp);

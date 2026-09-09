@@ -48,6 +48,12 @@ class IrGenerator {
         op);
   }
 
+  static TackyBinaryOp increment_binop(const PrefixOp& op) {
+    return std::holds_alternative<Increment>(op)
+               ? TackyBinaryOp{TackyAdd{}}
+               : TackyBinaryOp{TackySubtract{}};
+  }
+
   static TackyBinaryOp gen_binop(const BinaryOp& op) {
     return std::visit(
         Overloaded{
@@ -118,6 +124,48 @@ class IrGenerator {
               instructions_.push_back(
                   TackyCopy{result, TackyVar{lhs->name}});
               return TackyVar{lhs->name};
+            },
+            [&](const std::unique_ptr<CompoundAssignment>& c) -> TackyVal {
+              const Var* lhs = std::get_if<Var>(&c->lhs);
+              if (lhs == nullptr) {
+                throw CompileError(
+                    "internal error: invalid lvalue reached irgen");
+              }
+              TackyVal lv = gen_exp(c->lhs);
+              TackyVal rv = gen_exp(c->rhs);
+              TackyVar tmp{make_temporary()};
+              instructions_.push_back(
+                  TackyBinary{gen_binop(c->op), lv, rv, tmp});
+              instructions_.push_back(TackyCopy{tmp, TackyVar{lhs->name}});
+              return TackyVar{lhs->name};
+            },
+            [&](const std::unique_ptr<Prefix>& p) -> TackyVal {
+              const Var* operand = std::get_if<Var>(&p->operand);
+              if (operand == nullptr) {
+                throw CompileError(
+                    "internal error: invalid lvalue reached irgen");
+              }
+              TackyVar v{operand->name};
+              TackyVar tmp{make_temporary()};
+              instructions_.push_back(TackyBinary{
+                  increment_binop(p->op), v, TackyConstant{1}, tmp});
+              instructions_.push_back(TackyCopy{tmp, v});
+              return v;
+            },
+            [&](const std::unique_ptr<Postfix>& p) -> TackyVal {
+              const Var* operand = std::get_if<Var>(&p->operand);
+              if (operand == nullptr) {
+                throw CompileError(
+                    "internal error: invalid lvalue reached irgen");
+              }
+              TackyVar v{operand->name};
+              TackyVar old{make_temporary()};
+              TackyVar tmp{make_temporary()};
+              instructions_.push_back(TackyCopy{v, old});
+              instructions_.push_back(TackyBinary{
+                  increment_binop(p->op), v, TackyConstant{1}, tmp});
+              instructions_.push_back(TackyCopy{tmp, v});
+              return old;
             }},
         exp);
   }

@@ -40,6 +40,17 @@ struct Token {
     Greater,
     LessEqual,
     GreaterEqual,
+    DoublePlus,
+    PlusEquals,
+    MinusEquals,
+    StarEquals,
+    SlashEquals,
+    PercentEquals,
+    AmpersandEquals,
+    PipeEquals,
+    CaretEquals,
+    LeftShiftEquals,
+    RightShiftEquals,
   };
 
   Kind kind = Kind::Eof;

@@ -78,6 +78,28 @@ const char* kind_name(Token::Kind kind) {
       return "'<='";
     case Token::Kind::GreaterEqual:
       return "'>='";
+    case Token::Kind::DoublePlus:
+      return "'++'";
+    case Token::Kind::PlusEquals:
+      return "'+='";
+    case Token::Kind::MinusEquals:
+      return "'-='";
+    case Token::Kind::StarEquals:
+      return "'*='";
+    case Token::Kind::SlashEquals:
+      return "'/='";
+    case Token::Kind::PercentEquals:
+      return "'%='";
+    case Token::Kind::AmpersandEquals:
+      return "'&='";
+    case Token::Kind::PipeEquals:
+      return "'|='";
+    case Token::Kind::CaretEquals:
+      return "'^='";
+    case Token::Kind::LeftShiftEquals:
+      return "'<<='";
+    case Token::Kind::RightShiftEquals:
+      return "'>>='";
   }
   return "?";
 }
@@ -176,11 +198,17 @@ class Parser {
       if (!is_binary_op(kind) || precedence(kind) < min_prec) {
         break;
       }
-      if (kind == Token::Kind::Equals) {
+      if (is_assignment_op(kind)) {
         advance();
         Exp right = parse_exp(precedence(kind));
-        left = Exp{std::make_unique<Assignment>(
-            Assignment{std::move(left), std::move(right)})};
+        if (kind == Token::Kind::Equals) {
+          left = Exp{std::make_unique<Assignment>(
+              Assignment{std::move(left), std::move(right)})};
+        } else {
+          left = Exp{std::make_unique<CompoundAssignment>(
+              CompoundAssignment{compound_binop(kind), std::move(left),
+                                 std::move(right)})};
+        }
       } else {
         BinaryOp op = parse_binop();
         Exp right = parse_exp(precedence(kind) + 1);
@@ -192,26 +220,41 @@ class Parser {
 
   Exp parse_factor() {
     const Token& token = peek();
+    Exp result;
     if (token.kind == Token::Kind::Constant) {
-      return parse_constant();
-    }
-    if (token.kind == Token::Kind::Identifier) {
+      result = parse_constant();
+    } else if (token.kind == Token::Kind::Identifier) {
       std::string name = advance().identifier;
-      return Var{name};
-    }
-    if (token.kind == Token::Kind::Minus || token.kind == Token::Kind::Tilde ||
-        token.kind == Token::Kind::Not) {
+      result = Var{name};
+    } else if (token.kind == Token::Kind::OpenParen) {
+      advance();
+      result = parse_exp(0);
+      expect(Token::Kind::CloseParen);
+    } else if (token.kind == Token::Kind::Minus || token.kind == Token::Kind::Tilde ||
+             token.kind == Token::Kind::Not) {
       UnaryOp op = parse_unary_op();
       Exp operand = parse_factor();
       return Exp{std::make_unique<Unary>(Unary{op, std::move(operand)})};
+    } else if (token.kind == Token::Kind::DoublePlus ||
+               token.kind == Token::Kind::DoubleMinus) {
+      PrefixOp op = parse_prefix_op();
+      Exp operand = parse_factor();
+      return Exp{std::make_unique<Prefix>(Prefix{op, std::move(operand)})};
+    } else {
+      throw CompileError("expected expression, got " + describe(token));
     }
-    if (token.kind == Token::Kind::OpenParen) {
-      advance();
-      Exp inner = parse_exp(0);
-      expect(Token::Kind::CloseParen);
-      return inner;
+    while (peek().kind == Token::Kind::DoublePlus ||
+           peek().kind == Token::Kind::DoubleMinus) {
+      PostfixOp op = parse_postfix_op();
+      result = Exp{std::make_unique<Postfix>(Postfix{op, std::move(result)})};
     }
-    throw CompileError("expected expression, got " + describe(token));
+    return result;
+  }
+
+  static bool is_prefix_op(Token::Kind kind) {
+    return kind == Token::Kind::Minus || kind == Token::Kind::Tilde ||
+           kind == Token::Kind::Not || kind == Token::Kind::DoublePlus ||
+           kind == Token::Kind::DoubleMinus;
   }
 
   UnaryOp parse_unary_op() {
@@ -226,6 +269,28 @@ class Parser {
       return Not{};
     }
     throw CompileError("expected unary operator, got " + describe(token));
+  }
+
+  PrefixOp parse_prefix_op() {
+    const Token& token = advance();
+    if (token.kind == Token::Kind::DoublePlus) {
+      return Increment{};
+    }
+    if (token.kind == Token::Kind::DoubleMinus) {
+      return Decrement{};
+    }
+    throw CompileError("expected prefix operator, got " + describe(token));
+  }
+
+  PostfixOp parse_postfix_op() {
+    const Token& token = advance();
+    if (token.kind == Token::Kind::DoublePlus) {
+      return Increment{};
+    }
+    if (token.kind == Token::Kind::DoubleMinus) {
+      return Decrement{};
+    }
+    throw CompileError("expected postfix operator, got " + describe(token));
   }
 
   BinaryOp parse_binop() {
@@ -283,12 +348,62 @@ class Parser {
            kind == Token::Kind::DoubleEquals ||
            kind == Token::Kind::NotEquals ||
            kind == Token::Kind::DoubleAmpersand ||
-           kind == Token::Kind::DoublePipe || kind == Token::Kind::Equals;
+           kind == Token::Kind::DoublePipe || is_assignment_op(kind);
+  }
+
+  static bool is_assignment_op(Token::Kind kind) {
+    return kind == Token::Kind::Equals || kind == Token::Kind::PlusEquals ||
+           kind == Token::Kind::MinusEquals ||
+           kind == Token::Kind::StarEquals ||
+           kind == Token::Kind::SlashEquals ||
+           kind == Token::Kind::PercentEquals ||
+           kind == Token::Kind::AmpersandEquals ||
+           kind == Token::Kind::PipeEquals ||
+           kind == Token::Kind::CaretEquals ||
+           kind == Token::Kind::LeftShiftEquals ||
+           kind == Token::Kind::RightShiftEquals;
+  }
+
+  static BinaryOp compound_binop(Token::Kind kind) {
+    switch (kind) {
+      case Token::Kind::PlusEquals:
+        return Add{};
+      case Token::Kind::MinusEquals:
+        return Subtract{};
+      case Token::Kind::StarEquals:
+        return Multiply{};
+      case Token::Kind::SlashEquals:
+        return Divide{};
+      case Token::Kind::PercentEquals:
+        return Remainder{};
+      case Token::Kind::AmpersandEquals:
+        return BitAnd{};
+      case Token::Kind::PipeEquals:
+        return BitOr{};
+      case Token::Kind::CaretEquals:
+        return BitXor{};
+      case Token::Kind::LeftShiftEquals:
+        return LeftShift{};
+      case Token::Kind::RightShiftEquals:
+        return RightShift{};
+      default:
+        throw CompileError("internal error: not a compound assignment token");
+    }
   }
 
   static int precedence(Token::Kind kind) {
     switch (kind) {
       case Token::Kind::Equals:
+      case Token::Kind::PlusEquals:
+      case Token::Kind::MinusEquals:
+      case Token::Kind::StarEquals:
+      case Token::Kind::SlashEquals:
+      case Token::Kind::PercentEquals:
+      case Token::Kind::AmpersandEquals:
+      case Token::Kind::PipeEquals:
+      case Token::Kind::CaretEquals:
+      case Token::Kind::LeftShiftEquals:
+      case Token::Kind::RightShiftEquals:
         return 1;
       case Token::Kind::Star:
       case Token::Kind::Slash:
