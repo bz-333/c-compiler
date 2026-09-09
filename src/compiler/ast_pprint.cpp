@@ -115,6 +115,15 @@ void print_exp(const Exp& exp, std::ostream& os) {
             os << ", ";
             print_exp(p->operand, os);
             os << ')';
+          },
+          [&](const std::unique_ptr<Conditional>& c) {
+            os << "Conditional(";
+            print_exp(c->condition, os);
+            os << ", ";
+            print_exp(c->then_exp, os);
+            os << ", ";
+            print_exp(c->else_exp, os);
+            os << ')';
           }},
       exp);
 }
@@ -143,6 +152,29 @@ void print_stmt(const Stmt& stmt, std::ostream& os, int depth) {
           [&](const Null&) {
             indent(os, depth);
             os << "Null";
+          },
+          [&](const std::unique_ptr<If>& i) {
+            indent(os, depth);
+            os << "If(\n";
+            indent(os, depth + 1);
+            os << "condition=";
+            print_exp(i->condition, os);
+            os << ",\n";
+            indent(os, depth + 1);
+            os << "then=\n";
+            print_stmt(i->then, os, depth + 2);
+            os << ",\n";
+            indent(os, depth + 1);
+            os << "else=";
+            if (i->else_) {
+              os << '\n';
+              print_stmt(*i->else_, os, depth + 2);
+            } else {
+              os << "(none)";
+            }
+            os << '\n';
+            indent(os, depth);
+            os << ')';
           }},
       stmt);
 }

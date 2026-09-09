@@ -20,6 +20,10 @@ const char* kind_name(Token::Kind kind) {
       return "'void'";
     case Token::Kind::Keyword_Return:
       return "'return'";
+    case Token::Kind::Keyword_If:
+      return "'if'";
+    case Token::Kind::Keyword_Else:
+      return "'else'";
     case Token::Kind::Identifier:
       return "identifier";
     case Token::Kind::Constant:
@@ -100,6 +104,10 @@ const char* kind_name(Token::Kind kind) {
       return "'<<='";
     case Token::Kind::RightShiftEquals:
       return "'>>='";
+    case Token::Kind::Question:
+      return "'?'";
+    case Token::Kind::Colon:
+      return "':'";
   }
   return "?";
 }
@@ -182,6 +190,20 @@ class Parser {
       expect(Token::Kind::Semicolon);
       return Return{std::move(exp)};
     }
+    if (peek().kind == Token::Kind::Keyword_If) {
+      advance();
+      expect(Token::Kind::OpenParen);
+      Exp condition = parse_exp();
+      expect(Token::Kind::CloseParen);
+      Stmt then = parse_statement();
+      std::optional<Stmt> else_stmt;
+      if (peek().kind == Token::Kind::Keyword_Else) {
+        advance();
+        else_stmt = parse_statement();
+      }
+      return Stmt{std::make_unique<If>(
+          If{std::move(condition), std::move(then), std::move(else_stmt)})};
+    }
     if (peek().kind == Token::Kind::Semicolon) {
       advance();
       return Null{};
@@ -209,6 +231,13 @@ class Parser {
               CompoundAssignment{compound_binop(kind), std::move(left),
                                  std::move(right)})};
         }
+      } else if (kind == Token::Kind::Question) {
+        advance();
+        Exp middle = parse_exp(0);
+        expect(Token::Kind::Colon);
+        Exp right = parse_exp(precedence(kind));
+        left = Exp{std::make_unique<Conditional>(Conditional{
+            std::move(left), std::move(middle), std::move(right)})};
       } else {
         BinaryOp op = parse_binop();
         Exp right = parse_exp(precedence(kind) + 1);
@@ -348,7 +377,8 @@ class Parser {
            kind == Token::Kind::DoubleEquals ||
            kind == Token::Kind::NotEquals ||
            kind == Token::Kind::DoubleAmpersand ||
-           kind == Token::Kind::DoublePipe || is_assignment_op(kind);
+           kind == Token::Kind::DoublePipe || is_assignment_op(kind) ||
+           kind == Token::Kind::Question;
   }
 
   static bool is_assignment_op(Token::Kind kind) {
@@ -433,6 +463,8 @@ class Parser {
         return 10;
       case Token::Kind::DoublePipe:
         return 5;
+      case Token::Kind::Question:
+        return 3;
       default:
         return 0;
     }

@@ -75,6 +75,8 @@ struct Prefix;
 
 struct Postfix;
 
+struct Conditional;
+
 struct Var {
   std::string name;
 };
@@ -90,7 +92,8 @@ using PostfixOp = std::variant<Increment, Decrement>;
 using Exp = std::variant<Constant, Var, std::unique_ptr<Unary>,
                          std::unique_ptr<Binary>, std::unique_ptr<Assignment>,
                          std::unique_ptr<CompoundAssignment>,
-                         std::unique_ptr<Prefix>, std::unique_ptr<Postfix>>;
+                         std::unique_ptr<Prefix>, std::unique_ptr<Postfix>,
+                         std::unique_ptr<Conditional>>;
 
 struct Unary {
   UnaryOp op;
@@ -124,6 +127,12 @@ struct Postfix {
   Exp operand;
 };
 
+struct Conditional {
+  Exp condition;
+  Exp then_exp;
+  Exp else_exp;
+};
+
 struct Return {
   Exp exp;
 };
@@ -134,7 +143,15 @@ struct Expression {
 
 struct Null {};
 
-using Stmt = std::variant<Return, Expression, Null>;
+struct If;
+
+using Stmt = std::variant<Return, Expression, Null, std::unique_ptr<If>>;
+
+struct If {
+  Exp condition;
+  Stmt then;
+  std::optional<Stmt> else_;
+};
 
 struct Declaration {
   std::string name;

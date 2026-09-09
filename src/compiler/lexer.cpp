@@ -28,6 +28,12 @@ Token::Kind keyword_kind(const std::string& word) {
   if (word == "return") {
     return Token::Kind::Keyword_Return;
   }
+  if (word == "if") {
+    return Token::Kind::Keyword_If;
+  }
+  if (word == "else") {
+    return Token::Kind::Keyword_Else;
+  }
   return Token::Kind::Identifier;
 }
 
@@ -214,6 +220,12 @@ std::vector<Token> lex(const std::string& source) {
         } else {
           tokens.push_back({Token::Kind::Greater});
         }
+        break;
+      case '?':
+        tokens.push_back({Token::Kind::Question});
+        break;
+      case ':':
+        tokens.push_back({Token::Kind::Colon});
         break;
       default:
         throw CompileError(std::string("unexpected character: '") + c + "'");

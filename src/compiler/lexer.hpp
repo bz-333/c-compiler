@@ -11,6 +11,8 @@ struct Token {
     Keyword_Int,
     Keyword_Void,
     Keyword_Return,
+    Keyword_If,
+    Keyword_Else,
     Identifier,
     Constant,
     OpenParen,
@@ -51,6 +53,8 @@ struct Token {
     CaretEquals,
     LeftShiftEquals,
     RightShiftEquals,
+    Question,
+    Colon,
   };
 
   Kind kind = Kind::Eof;

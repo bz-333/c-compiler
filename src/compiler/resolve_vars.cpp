@@ -62,6 +62,17 @@ class VarResolver {
               return Expression{resolve_exp(e.exp)};
             },
             [&](const Null&) -> Stmt { return Null{}; },
+            [&](const std::unique_ptr<If>& i) -> Stmt {
+              Exp condition = resolve_exp(i->condition);
+              Stmt then = resolve_statement(i->then);
+              std::optional<Stmt> else_stmt;
+              if (i->else_) {
+                else_stmt = resolve_statement(*i->else_);
+              }
+              return Stmt{std::make_unique<If>(If{std::move(condition),
+                                                  std::move(then),
+                                                  std::move(else_stmt)})};
+            },
         },
         stmt);
   }
@@ -115,6 +126,11 @@ class VarResolver {
               }
               return Exp{std::make_unique<Postfix>(
                   Postfix{p->op, std::move(operand)})};
+            },
+            [&](const std::unique_ptr<Conditional>& c) -> Exp {
+              return Exp{std::make_unique<Conditional>(Conditional{
+                  resolve_exp(c->condition), resolve_exp(c->then_exp),
+                  resolve_exp(c->else_exp)})};
             },
         },
         exp);

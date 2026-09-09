@@ -166,6 +166,21 @@ class IrGenerator {
                   increment_binop(p->op), v, TackyConstant{1}, tmp});
               instructions_.push_back(TackyCopy{tmp, v});
               return old;
+            },
+            [&](const std::unique_ptr<Conditional>& c) -> TackyVal {
+              std::string e2_label = generate_label("e2");
+              std::string end_label = generate_label("end");
+              TackyVal cond = gen_exp(c->condition);
+              instructions_.push_back(TackyJumpIfZero{cond, e2_label});
+              TackyVal v1 = gen_exp(c->then_exp);
+              TackyVar result{make_temporary()};
+              instructions_.push_back(TackyCopy{v1, result});
+              instructions_.push_back(TackyJump{end_label});
+              instructions_.push_back(TackyLabel{e2_label});
+              TackyVal v2 = gen_exp(c->else_exp);
+              instructions_.push_back(TackyCopy{v2, result});
+              instructions_.push_back(TackyLabel{end_label});
+              return result;
             }},
         exp);
   }
@@ -218,6 +233,24 @@ class IrGenerator {
             },
             [&](const Expression& e) { gen_exp(e.exp); },
             [&](const Null&) {},
+            [&](const std::unique_ptr<If>& i) {
+              TackyVal cond = gen_exp(i->condition);
+              if (i->else_) {
+                std::string else_label = generate_label("else");
+                std::string end_label = generate_label("end");
+                instructions_.push_back(TackyJumpIfZero{cond, else_label});
+                gen_statement(i->then);
+                instructions_.push_back(TackyJump{end_label});
+                instructions_.push_back(TackyLabel{else_label});
+                gen_statement(*i->else_);
+                instructions_.push_back(TackyLabel{end_label});
+              } else {
+                std::string end_label = generate_label("end");
+                instructions_.push_back(TackyJumpIfZero{cond, end_label});
+                gen_statement(i->then);
+                instructions_.push_back(TackyLabel{end_label});
+              }
+            },
         },
         stmt);
   }
