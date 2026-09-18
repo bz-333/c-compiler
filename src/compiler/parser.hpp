@@ -151,8 +151,11 @@ struct Labeled;
 
 struct If;
 
+struct Compound;
+
 using Stmt = std::variant<Return, Expression, Null, std::unique_ptr<If>, Goto,
-                          std::unique_ptr<Labeled>>;
+                          std::unique_ptr<Labeled>,
+                          std::unique_ptr<Compound>>;
 
 struct Labeled {
   std::string name;
@@ -172,9 +175,17 @@ struct Declaration {
 
 using BlockItem = std::variant<Stmt, Declaration>;
 
+struct Block {
+  std::vector<BlockItem> body;
+};
+
+struct Compound {
+  Block block;
+};
+
 struct Function {
   std::string name;
-  std::vector<BlockItem> body;
+  Block body;
 };
 
 struct Program {

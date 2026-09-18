@@ -19,10 +19,10 @@ class VarResolver {
  public:
   Program resolve(const Program& program) {
     std::vector<BlockItem> body;
-    for (const BlockItem& item : program.func.body) {
+    for (const BlockItem& item : program.func.body.body) {
       body.push_back(resolve_block_item(item));
     }
-    return Program{Function{program.func.name, std::move(body)}};
+    return Program{Function{program.func.name, Block{std::move(body)}}};
   }
 
  private:
@@ -66,6 +66,10 @@ class VarResolver {
             [&](const std::unique_ptr<Labeled>& l) -> Stmt {
               return Stmt{std::make_unique<Labeled>(
                   Labeled{l->name, resolve_statement(l->statement)})};
+            },
+            [&](const std::unique_ptr<Compound>&) -> Stmt {
+              throw CompileError(
+                  "compound statements not yet supported by validate");
             },
             [&](const std::unique_ptr<If>& i) -> Stmt {
               Exp condition = resolve_exp(i->condition);

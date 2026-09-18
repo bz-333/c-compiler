@@ -159,13 +159,18 @@ class Parser {
     expect(Token::Kind::OpenParen);
     expect(Token::Kind::Keyword_Void);
     expect(Token::Kind::CloseParen);
+    Block body = parse_block();
+    return Function{name, std::move(body)};
+  }
+
+  Block parse_block() {
     expect(Token::Kind::OpenBrace);
     std::vector<BlockItem> body;
     while (peek().kind != Token::Kind::CloseBrace) {
       body.push_back(parse_block_item());
     }
     expect(Token::Kind::CloseBrace);
-    return Function{name, std::move(body)};
+    return Block{std::move(body)};
   }
 
   BlockItem parse_block_item() {
@@ -225,6 +230,10 @@ class Parser {
     if (peek().kind == Token::Kind::Semicolon) {
       advance();
       return Null{};
+    }
+    if (peek().kind == Token::Kind::OpenBrace) {
+      Block block = parse_block();
+      return Stmt{std::make_unique<Compound>(Compound{std::move(block)})};
     }
     Exp exp = parse_exp();
     expect(Token::Kind::Semicolon);

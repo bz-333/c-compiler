@@ -15,7 +15,7 @@ namespace {
 class IrGenerator {
  public:
   TackyProgram generate(const Program& program) {
-    for (const BlockItem& item : program.func.body) {
+    for (const BlockItem& item : program.func.body.body) {
       std::visit(
           Overloaded{
               [&](const Declaration& decl) { gen_declaration(decl); },
@@ -239,6 +239,10 @@ class IrGenerator {
             [&](const std::unique_ptr<Labeled>& l) {
               instructions_.push_back(TackyLabel{l->name});
               gen_statement(l->statement);
+            },
+            [&](const std::unique_ptr<Compound>&) {
+              throw CompileError(
+                  "compound statements not yet supported by irgen");
             },
             [&](const std::unique_ptr<If>& i) {
               TackyVal cond = gen_exp(i->condition);

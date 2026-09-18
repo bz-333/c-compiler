@@ -128,6 +128,8 @@ void print_exp(const Exp& exp, std::ostream& os) {
       exp);
 }
 
+void print_block(const Block& block, std::ostream& os, int depth);
+
 void print_stmt(const Stmt& stmt, std::ostream& os, int depth) {
   std::visit(
       Overloaded{
@@ -191,6 +193,16 @@ void print_stmt(const Stmt& stmt, std::ostream& os, int depth) {
             os << '\n';
             indent(os, depth);
             os << ')';
+          },
+          [&](const std::unique_ptr<Compound>& c) {
+            indent(os, depth);
+            os << "Compound(\n";
+            indent(os, depth + 1);
+            os << "block=";
+            print_block(c->block, os, depth + 1);
+            os << '\n';
+            indent(os, depth);
+            os << ')';
           }},
       stmt);
 }
@@ -222,18 +234,28 @@ void print_block_item(const BlockItem& item, std::ostream& os, int depth) {
              item);
 }
 
-void print_function(const Function& func, std::ostream& os, int depth) {
-  os << "Function(\n";
+void print_block(const Block& block, std::ostream& os, int depth) {
+  os << "Block(\n";
   indent(os, depth + 1);
-  os << "name=\"" << func.name << "\",\n";
-  indent(os, depth + 1);
-  os << "body=[\n";
-  for (const BlockItem& item : func.body) {
+  os << "[\n";
+  for (const BlockItem& item : block.body) {
     print_block_item(item, os, depth + 2);
     os << '\n';
   }
   indent(os, depth + 1);
   os << "]\n";
+  indent(os, depth);
+  os << ')';
+}
+
+void print_function(const Function& func, std::ostream& os, int depth) {
+  os << "Function(\n";
+  indent(os, depth + 1);
+  os << "name=\"" << func.name << "\",\n";
+  indent(os, depth + 1);
+  os << "body=";
+  print_block(func.body, os, depth + 1);
+  os << '\n';
   indent(os, depth);
   os << ')';
 }

@@ -16,7 +16,7 @@ namespace {
 class LabelChecker {
  public:
   void check(const Program& program) {
-    for (const BlockItem& item : program.func.body) {
+    for (const BlockItem& item : program.func.body.body) {
       std::visit(
           Overloaded{
               [&](const Declaration&) {},
@@ -54,6 +54,10 @@ class LabelChecker {
               }
               labels_.insert(l->name);
               collect_statement(l->statement);
+            },
+            [&](const std::unique_ptr<Compound>&) {
+              throw CompileError(
+                  "compound statements not yet supported by validate");
             },
         },
         stmt);
